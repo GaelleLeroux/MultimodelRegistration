@@ -30,7 +30,7 @@ def orientation(target,source,mean_source):
     # normal_source, direction_source = make_vector([right_source,left_source],middle_source)
     normal_source, direction_source = np.array(source[0]), np.array(source[1])
     # normal_target , direction_target = make_vector([right_target,left_target],middle_target)
-    normal_target , direction_target = [0,0,1],[0,1,0]
+    normal_target , direction_target = [0,0,1],[0,1,0.5]
 
     print("normal_source : ",normal_source)
     print("direction_source : ",direction_source)
