@@ -32,17 +32,12 @@ import glob
 print_config()
 print("*"*150)
 
-data_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/"
-
+data_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/example_monai/Task09_Spleen/"
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
 data_dicts = [{"image": image_name, "label": label_name} for image_name, label_name in zip(train_images, train_labels)]
 train_files, val_files = data_dicts[:-9], data_dicts[-9:]
-
-print("train_files : ",train_files)
-print("val_files : ",val_files)
-print("*"*150)
 
 set_determinism(seed=0)
 
@@ -53,8 +48,8 @@ train_transforms = Compose(
         EnsureChannelFirstd(keys=["image", "label"]),
         ScaleIntensityRanged(
             keys=["image"],
-            a_min=0,
-            a_max=200,
+            a_min=-57,
+            a_max=164,
             b_min=0.0,
             b_max=1.0,
             clip=True,
@@ -65,7 +60,7 @@ train_transforms = Compose(
         RandCropByPosNegLabeld(
             keys=["image", "label"],
             label_key="label",
-            spatial_size=(15, 15, 5),
+            spatial_size=(96, 96, 96),
             pos=1,
             neg=1,
             num_samples=4,
@@ -87,8 +82,8 @@ val_transforms = Compose(
         EnsureChannelFirstd(keys=["image", "label"]),
         ScaleIntensityRanged(
             keys=["image"],
-            a_min=0,
-            a_max=200,
+            a_min=-57,
+            a_max=164,
             b_min=0.0,
             b_max=1.0,
             clip=True,
@@ -110,12 +105,12 @@ print(f"image shape: {image.shape}, label shape: {label.shape}")
 plt.figure("check", (12, 6))
 plt.subplot(1, 2, 1)
 plt.title("image")
-plt.imshow(image[:, :, 30], cmap="gray")
+plt.imshow(image[:, :, 80], cmap="gray")
 plt.subplot(1, 2, 2)
 plt.title("label")
-plt.imshow(label[:, :, 30])
+plt.imshow(label[:, :, 80])
 
-plt.savefig('figure1_checkdata.png')
+plt.savefig('demo_figure1_checkdata.png')
 plt.clf()
 
 
@@ -131,12 +126,7 @@ val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, 
 val_loader = DataLoader(val_ds, batch_size=1, num_workers=4)
 
 
-
-####################################################################################################################################################
-# CREATE MODEL, LOSS, OPTIMIZER
 # standard PyTorch program style: create UNet, DiceLoss and Adam optimizer
-print("-"*150)
-print("CREATE MODEL, LOSS, OPTIMIZER")
 device = torch.device("cuda:0")
 model = UNet(
     spatial_dims=3,
@@ -152,10 +142,7 @@ optimizer = torch.optim.Adam(model.parameters(), 1e-4)
 dice_metric = DiceMetric(include_background=False, reduction="mean")
 
 
-####################################################################################################################################################
-# CLASSIC TRAINING
-print("-"*150)
-print("CLASSIC TRAINING")
+
 max_epochs = 600
 val_interval = 2
 best_metric = -1
@@ -178,8 +165,6 @@ for epoch in range(max_epochs):
             batch_data["label"].to(device),
         )
         optimizer.zero_grad()
-        inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
-        print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
         outputs = model(inputs)
         loss = loss_function(outputs, labels)
         loss.backward()
@@ -224,10 +209,7 @@ for epoch in range(max_epochs):
             )
             
             
-print("-"*150)
-print(f"train completed, best_metric: {best_metric:.4f} " f"at epoch: {best_metric_epoch}")
-
-
+            
 plt.figure("train", (12, 6))
 plt.subplot(1, 2, 1)
 plt.title("Epoch Average Loss")
@@ -241,103 +223,6 @@ x = [val_interval * (i + 1) for i in range(len(metric_values))]
 y = metric_values
 plt.xlabel("epoch")
 plt.plot(x, y)
-plt.savefig('figure2_loss_metric.png')
+plt.plot(x, y)
+plt.savefig('demo_figure2_loss_metric.png')
 plt.clf()
-# plt.show()
-
-####################################################################################################################################################
-# Check best model output with the input image and label
-print("-"*150)
-print("Check best model output with the input image and label")
-
-
-model.load_state_dict(torch.load(os.path.join(root_dir, "best_metric_model.pth")))
-model.eval()
-num_fig = 2
-with torch.no_grad():
-    for i, val_data in enumerate(val_loader):
-        num_fig+=1
-        roi_size = (160, 160, 160)
-        sw_batch_size = 4
-        val_outputs = sliding_window_inference(val_data["image"].to(device), roi_size, sw_batch_size, model)
-        # plot the slice [:, :, 80]
-        plt.figure("check", (18, 6))
-        plt.subplot(1, 3, 1)
-        plt.title(f"image {i}")
-        plt.imshow(val_data["image"][0, 0, :, :, 80], cmap="gray")
-        plt.subplot(1, 3, 2)
-        plt.title(f"label {i}")
-        plt.imshow(val_data["label"][0, 0, :, :, 80])
-        plt.subplot(1, 3, 3)
-        plt.title(f"output {i}")
-        plt.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, 80])
-        # plt.show()
-        plt.savefig(f'figure{num_fig}_bestmodel_with_inputimagelabel.png')
-        plt.clf()
-        if i == 2:
-            break
-        
-####################################################################################################################################################
-# Check best model output with the input image and label
-print("-"*150)
-print("Evaluation on original image spacings")
-      
-val_org_transforms = Compose(
-    [
-        LoadImaged(keys=["image", "label"]),
-        EnsureChannelFirstd(keys=["image", "label"]),
-        Orientationd(keys=["image"], axcodes="RAS"),
-        Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
-        ScaleIntensityRanged(
-            keys=["image"],
-            a_min=-57,
-            a_max=164,
-            b_min=0.0,
-            b_max=1.0,
-            clip=True,
-        ),
-        CropForegroundd(keys=["image"], source_key="image"),
-    ]
-)
-
-val_org_ds = Dataset(data=val_files, transform=val_org_transforms)
-val_org_loader = DataLoader(val_org_ds, batch_size=1, num_workers=4)
-
-post_transforms = Compose(
-    [
-        Invertd(
-            keys="pred",
-            transform=val_org_transforms,
-            orig_keys="image",
-            meta_keys="pred_meta_dict",
-            orig_meta_keys="image_meta_dict",
-            meta_key_postfix="meta_dict",
-            nearest_interp=False,
-            to_tensor=True,
-            device="cpu",
-        ),
-        AsDiscreted(keys="pred", argmax=True, to_onehot=2),
-        AsDiscreted(keys="label", to_onehot=2),
-    ]
-)
-
-model.load_state_dict(torch.load(os.path.join(root_dir, "best_metric_model.pth")))
-model.eval()
-
-with torch.no_grad():
-    for val_data in val_org_loader:
-        val_inputs = val_data["image"].to(device)
-        roi_size = (160, 160, 160)
-        sw_batch_size = 4
-        val_data["pred"] = sliding_window_inference(val_inputs, roi_size, sw_batch_size, model)
-        val_data = [post_transforms(i) for i in decollate_batch(val_data)]
-        val_outputs, val_labels = from_engine(["pred", "label"])(val_data)
-        # compute metric for current iteration
-        dice_metric(y_pred=val_outputs, y=val_labels)
-
-    # aggregate the final mean dice result
-    metric_org = dice_metric.aggregate().item()
-    # reset the status for next validation round
-    dice_metric.reset()
-
-print("Metric on original image spacing: ", metric_org)
