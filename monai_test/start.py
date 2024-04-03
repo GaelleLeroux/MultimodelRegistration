@@ -33,16 +33,18 @@ print_config()
 print("*"*150)
 
 data_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/"
-
+root_dir = "/home/luciacev/Documents/Gaelle/MultimodelRegistration/monai_test/model_output/"
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
 data_dicts = [{"image": image_name, "label": label_name} for image_name, label_name in zip(train_images, train_labels)]
-train_files, val_files = data_dicts[:-9], data_dicts[-9:]
+train_files, val_files = data_dicts[:-4], data_dicts[-4:]
 
 print("train_files : ",train_files)
 print("val_files : ",val_files)
 print("*"*150)
+print("size(train_files) : ",len(train_files))
+print("size(val_files) : ",len(val_files))
 
 set_determinism(seed=0)
 
@@ -53,19 +55,19 @@ train_transforms = Compose(
         EnsureChannelFirstd(keys=["image", "label"]),
         ScaleIntensityRanged(
             keys=["image"],
-            a_min=0,
-            a_max=200,
+            a_min=50,
+            a_max=800,
             b_min=0.0,
             b_max=1.0,
             clip=True,
         ),
         CropForegroundd(keys=["image", "label"], source_key="image"),
         Orientationd(keys=["image", "label"], axcodes="RAS"),
-        Spacingd(keys=["image", "label"], pixdim=(1.5, 1.5, 2.0), mode=("bilinear", "nearest")),
+        # Spacingd(keys=["image", "label"], pixdim=(0.46, 0.46, 2.46), mode=("bilinear", "nearest")),
         RandCropByPosNegLabeld(
             keys=["image", "label"],
             label_key="label",
-            spatial_size=(15, 15, 5),
+            spatial_size=(7, 7, 7),
             pos=1,
             neg=1,
             num_samples=4,
@@ -87,44 +89,91 @@ val_transforms = Compose(
         EnsureChannelFirstd(keys=["image", "label"]),
         ScaleIntensityRanged(
             keys=["image"],
-            a_min=0,
-            a_max=200,
+            # a_min=50,
+            # a_max=350,
+            a_min=50,
+            a_max=800,
             b_min=0.0,
             b_max=1.0,
             clip=True,
         ),
         CropForegroundd(keys=["image", "label"], source_key="image"),
         Orientationd(keys=["image", "label"], axcodes="RAS"),
-        Spacingd(keys=["image", "label"], pixdim=(1.5, 1.5, 2.0), mode=("bilinear", "nearest")),
+        # Spacingd(keys=["image", "label"], pixdim=(0.46, 0.46, 2.46), mode=("bilinear", "nearest")),
     ]
 )
 
-
+print("-"*150)
+print("DATA CHECK")
 
 check_ds = Dataset(data=val_files, transform=val_transforms)
 check_loader = DataLoader(check_ds, batch_size=1)
 check_data = first(check_loader)
 image, label = (check_data["image"][0][0], check_data["label"][0][0])
 print(f"image shape: {image.shape}, label shape: {label.shape}")
+print(check_data.keys())
+print(check_data['image'].meta.keys()) # Si vous utilisez une version de MONAI où les métadonnées sont directement attachées à l'objet Tensor
+
+image_path = check_data["image"].meta['filename_or_obj']
+label_path = check_data["label"].meta['filename_or_obj']
+
+print(f"Image path: {image_path}")
+print(f"Label path: {label_path}")
 # plot the slice [:, :, 80]
-plt.figure("check", (12, 6))
-plt.subplot(1, 2, 1)
-plt.title("image")
-plt.imshow(image[:, :, 30], cmap="gray")
-plt.subplot(1, 2, 2)
-plt.title("label")
-plt.imshow(label[:, :, 30])
+# plt.figure("check", (12, 6))
+# plt.subplot(1, 2, 1)
+# plt.title("image")
+# plt.imshow(image[:, 8, :], cmap="gray")
+# plt.subplot(1, 2, 2)
+# plt.title("label")
+# plt.imshow(label[:, 8, :])
 
-plt.savefig('figure1_checkdata.png')
-plt.clf()
+# plt.savefig('figure1_checkdata.png')
+# plt.clf()
 
+size = image.shape
+print("size : ",size)
+# i = 0
+# for m in size :
+#     i+=1
+#     for num in range(m):
+#         plt.figure(figsize=(12, 6))
+#         if i==1:
+#             plt.subplot(1, 2, 1)
+#             plt.title("image")
+#             plt.imshow(image[num, :, :], cmap="gray")
+#             plt.subplot(1, 2, 2)
+#             plt.title("label")
+#             plt.imshow(label[num, :, :])
+#             plt.savefig(f'./image_mine_50_800/x/demo_figure{num}_checkdata.png')
+#         elif i==2:
+#             plt.subplot(1, 2, 1)
+#             plt.title("image")
+#             plt.imshow(image[:, num, :], cmap="gray")
+#             plt.subplot(1, 2, 2)
+#             plt.title("label")
+#             plt.imshow(label[:, num, :])
+#             plt.savefig(f'./image_mine_50_800/y/demo_figure{num}_checkdata.png')
+#         elif i==3:
+#             plt.subplot(1, 2, 1)
+#             plt.title("image")
+#             plt.imshow(image[:, :, num], cmap="gray")
+#             plt.subplot(1, 2, 2)
+#             plt.title("label")
+#             plt.imshow(label[:, :, num])
+#             plt.savefig(f'./image_mine_50_800/z/demo_figure{num}_checkdata.png')
+#         plt.close()
+
+# reponse = input("Tapez quelque chose et appuyez sur Entrée : ")
+print("-"*150)
+print("DATA CHECK END")
 
 train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=4)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
 
 # use batch_size=2 to load images and use RandCropByPosNegLabeld
 # to generate 2 x 4 images for network training
-train_loader = DataLoader(train_ds, batch_size=2, shuffle=True, num_workers=4)
+train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, num_workers=4)
 
 val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=4)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
@@ -142,14 +191,24 @@ model = UNet(
     spatial_dims=3,
     in_channels=1,
     out_channels=2,
-    channels=(16, 32, 64, 128, 256),
-    strides=(2, 2, 2, 2),
+    channels=(16, 32, 64, 128,256),
+    strides=(1, 1, 1, 1),
     num_res_units=2,
     norm=Norm.BATCH,
 ).to(device)
 loss_function = DiceLoss(to_onehot_y=True, softmax=True)
 optimizer = torch.optim.Adam(model.parameters(), 1e-4)
 dice_metric = DiceMetric(include_background=False, reduction="mean")
+
+for name, module in model.named_modules():
+    if isinstance(module, torch.nn.Linear):
+        # Pour les couches linéaires
+        num_neurons = module.out_features
+        print(f"{name} - Linear layer with {num_neurons} neurons")
+    elif isinstance(module, torch.nn.Conv2d) or isinstance(module, torch.nn.Conv3d):
+        # Pour les couches convolutives (2D ou 3D)
+        num_neurons = module.out_channels
+        print(f"{name} - Convolutional layer with {num_neurons} filters/neurons")
 
 
 ####################################################################################################################################################
@@ -178,9 +237,11 @@ for epoch in range(max_epochs):
             batch_data["label"].to(device),
         )
         optimizer.zero_grad()
-        inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
+        # inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
         print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
+        # input2 = inputs[0,0,:,:,:]
         outputs = model(inputs)
+        print(f"Shape of batch outputs: {outputs.shape}")
         loss = loss_function(outputs, labels)
         loss.backward()
         optimizer.step()

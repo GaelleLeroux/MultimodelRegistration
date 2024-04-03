@@ -6,6 +6,11 @@ import argparse
 def get_nifti_info(file_path):
     # Read the NIfTI file
     image = sitk.ReadImage(file_path)
+    
+    statistics_filter = sitk.StatisticsImageFilter()
+    statistics_filter.Execute(image)
+    min_pixel_value = statistics_filter.GetMinimum()
+    max_pixel_value = statistics_filter.GetMaximum()
 
     # Get information
     info = {
@@ -14,9 +19,11 @@ def get_nifti_info(file_path):
         "Size": image.GetSize(),
         "Spacing": image.GetSpacing(),
         "Origin": image.GetOrigin(),
-        "Direction": image.GetDirection(),
         "Pixel Type": sitk.GetPixelIDValueAsString(image.GetPixelID()),
-        "Number of Components per Pixel": image.GetNumberOfComponentsPerPixel()
+        "Min Pixel Value": min_pixel_value,  
+        "Max Pixel Value": max_pixel_value,
+        "Number of Components per Pixel": image.GetNumberOfComponentsPerPixel(),
+        "Direction": image.GetDirection()
     }
 
     return info

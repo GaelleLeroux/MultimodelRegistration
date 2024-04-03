@@ -100,11 +100,14 @@ check_ds = Dataset(data=val_files, transform=val_transforms)
 check_loader = DataLoader(check_ds, batch_size=1)
 check_data = first(check_loader)
 image, label = (check_data["image"][0][0], check_data["label"][0][0])
+print("check_loader : ",check_loader)
+print("check_data : ",check_data)
 print(f"image shape: {image.shape}, label shape: {label.shape}")
 # plot the slice [:, :, 80]
 plt.figure("check", (12, 6))
 plt.subplot(1, 2, 1)
 plt.title("image")
+print("size image 80 image[:, :, 80] : ",image[:, :, 80].shape)
 plt.imshow(image[:, :, 80], cmap="gray")
 plt.subplot(1, 2, 2)
 plt.title("label")
@@ -113,6 +116,21 @@ plt.imshow(label[:, :, 80])
 plt.savefig('demo_figure1_checkdata.png')
 plt.clf()
 
+# for num in range(228):
+#     # plt.figure("check", (12, 6))
+#     plt.figure(figsize=(12, 6))
+#     plt.subplot(1, 2, 1)
+#     plt.title("image")
+#     # print(f"size image num image[:, {num}, :] : ",image[:, num, :].shape)
+#     plt.imshow(image[num, :, :], cmap="gray")
+#     plt.subplot(1, 2, 2)
+#     plt.title("label")
+#     plt.imshow(label[num, :, :])
+
+#     plt.savefig(f'./image_demo/x/demo_figure{num}_checkdata.png')
+#     plt.close()
+
+reponse = input("Tapez quelque chose et appuyez sur Entrée : ")
 
 train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=4)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
@@ -164,6 +182,8 @@ for epoch in range(max_epochs):
             batch_data["image"].to(device),
             batch_data["label"].to(device),
         )
+        print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
+        reponse = input("Tapez quelque chose et appuyez sur Entrée : ")
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = loss_function(outputs, labels)
