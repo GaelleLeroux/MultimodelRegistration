@@ -37,14 +37,27 @@ root_dir = "/home/luciacev/Documents/Gaelle/MultimodelRegistration/monai_test/mo
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
+
 data_dicts = [{"image": image_name, "label": label_name} for image_name, label_name in zip(train_images, train_labels)]
-train_files, val_files = data_dicts[:-4], data_dicts[-4:]
+num_test_files = 3
+num_val_files = 5
+
+assert len(data_dicts) > num_test_files + num_val_files, "Il n'y a pas assez de fichiers pour les ensembles spécifiés."
+
+# Répartition des données entre les ensembles de test, de validation, et d'entraînement
+test_data = data_dicts[:num_test_files]
+val_files = data_dicts[num_test_files:num_test_files + num_val_files]
+train_files = data_dicts[num_test_files + num_val_files:]
+
+
 
 print("train_files : ",train_files)
 print("val_files : ",val_files)
+print("test_data : ",test_data)
 print("*"*150)
 print("size(train_files) : ",len(train_files))
 print("size(val_files) : ",len(val_files))
+print("size(test_data) : ",len(test_data))
 
 set_determinism(seed=0)
 
@@ -168,16 +181,16 @@ print("size : ",size)
 print("-"*150)
 print("DATA CHECK END")
 
-train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=4)
+train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=2)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
 
 # use batch_size=2 to load images and use RandCropByPosNegLabeld
 # to generate 2 x 4 images for network training
-train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, num_workers=4)
+train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, num_workers=2)
 
-val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=4)
+val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=2)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
-val_loader = DataLoader(val_ds, batch_size=1, num_workers=4)
+val_loader = DataLoader(val_ds, batch_size=1, num_workers=2)
 
 
 
@@ -212,134 +225,144 @@ for name, module in model.named_modules():
 
 
 ####################################################################################################################################################
-# CLASSIC TRAINING
-print("-"*150)
-print("CLASSIC TRAINING")
-max_epochs = 600
-val_interval = 2
-best_metric = -1
-best_metric_epoch = -1
-epoch_loss_values = []
-metric_values = []
-post_pred = Compose([AsDiscrete(argmax=True, to_onehot=2)])
-post_label = Compose([AsDiscrete(to_onehot=2)])
+# # CLASSIC TRAINING
+# print("-"*150)
+# print("CLASSIC TRAINING")
+# max_epochs = 600
+# val_interval = 2
+# best_metric = -1
+# best_metric_epoch = -1
+# epoch_loss_values = []
+# metric_values = []
+# post_pred = Compose([AsDiscrete(argmax=True, to_onehot=2)])
+# post_label = Compose([AsDiscrete(to_onehot=2)])
 
-for epoch in range(max_epochs):
-    print("-" * 10)
-    print(f"epoch {epoch + 1}/{max_epochs}")
-    model.train()
-    epoch_loss = 0
-    step = 0
-    for batch_data in train_loader:
-        step += 1
-        inputs, labels = (
-            batch_data["image"].to(device),
-            batch_data["label"].to(device),
-        )
-        optimizer.zero_grad()
-        # inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
-        print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
-        # input2 = inputs[0,0,:,:,:]
-        outputs = model(inputs)
-        print(f"Shape of batch outputs: {outputs.shape}")
-        loss = loss_function(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        epoch_loss += loss.item()
-        print(f"{step}/{len(train_ds) // train_loader.batch_size}, " f"train_loss: {loss.item():.4f}")
-    epoch_loss /= step
-    epoch_loss_values.append(epoch_loss)
-    print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+# for epoch in range(max_epochs):
+#     torch.cuda.empty_cache() 
+#     print("-" * 10)
+#     print(f"epoch {epoch + 1}/{max_epochs}")
+#     model.train()
+#     epoch_loss = 0
+#     step = 0
+#     for batch_data in train_loader:
+#         step += 1
+#         inputs, labels = (
+#             batch_data["image"].to(device),
+#             batch_data["label"].to(device),
+#         )
+#         optimizer.zero_grad()
+#         # inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
+#         print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
+#         # input2 = inputs[0,0,:,:,:]
+#         outputs = model(inputs)
+#         print(f"Shape of batch outputs: {outputs.shape}")
+#         loss = loss_function(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
+#         epoch_loss += loss.item()
+#         print(f"{step}/{len(train_ds) // train_loader.batch_size}, " f"train_loss: {loss.item():.4f}")
+#     epoch_loss /= step
+#     epoch_loss_values.append(epoch_loss)
+#     print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
 
-    if (epoch + 1) % val_interval == 0:
-        model.eval()
-        with torch.no_grad():
-            for val_data in val_loader:
-                val_inputs, val_labels = (
-                    val_data["image"].to(device),
-                    val_data["label"].to(device),
-                )
-                roi_size = (160, 160, 160)
-                sw_batch_size = 4
-                val_outputs = sliding_window_inference(val_inputs, roi_size, sw_batch_size, model)
-                val_outputs = [post_pred(i) for i in decollate_batch(val_outputs)]
-                val_labels = [post_label(i) for i in decollate_batch(val_labels)]
-                # compute metric for current iteration
-                dice_metric(y_pred=val_outputs, y=val_labels)
+#     if (epoch + 1) % val_interval == 0:
+#         torch.cuda.empty_cache() 
+#         model.eval()
+#         with torch.no_grad():
+#             num = 0
+#             for val_data in val_loader:
+#                 num+=1
+#                 val_inputs, val_labels = (
+#                     val_data["image"].to(device),
+#                     val_data["label"].to(device),
+#                 )
+#                 roi_size = (32, 32, 32)
+#                 sw_batch_size = 1
+#                 print(f"{num}1")
+#                 val_outputs = sliding_window_inference(val_inputs, roi_size, sw_batch_size, model)
+#                 print(f"{num}2")
+#                 val_outputs = [post_pred(i) for i in decollate_batch(val_outputs)]
+#                 print(f"{num}3")
+#                 val_labels = [post_label(i) for i in decollate_batch(val_labels)]
+#                 print(f"{num}4")
+#                 # compute metric for current iteration
+#                 dice_metric(y_pred=val_outputs, y=val_labels)
+#                 print(f"{num}5")
 
-            # aggregate the final mean dice result
-            metric = dice_metric.aggregate().item()
-            # reset the status for next validation round
-            dice_metric.reset()
+#             # aggregate the final mean dice result
+#             metric = dice_metric.aggregate().item()
+#             # reset the status for next validation round
+#             dice_metric.reset()
 
-            metric_values.append(metric)
-            if metric > best_metric:
-                best_metric = metric
-                best_metric_epoch = epoch + 1
-                torch.save(model.state_dict(), os.path.join(root_dir, "best_metric_model.pth"))
-                print("saved new best metric model")
-            print(
-                f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
-                f"\nbest mean dice: {best_metric:.4f} "
-                f"at epoch: {best_metric_epoch}"
-            )
+#             metric_values.append(metric)
+#             if metric > best_metric:
+#                 best_metric = metric
+#                 best_metric_epoch = epoch + 1
+#                 torch.save(model.state_dict(), os.path.join(root_dir, "best_metric_model.pth"))
+#                 print("saved new best metric model")
+#                 torch.cuda.empty_cache() 
+#             print(
+#                 f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
+#                 f"\nbest mean dice: {best_metric:.4f} "
+#                 f"at epoch: {best_metric_epoch}"
+#             )
             
             
-print("-"*150)
-print(f"train completed, best_metric: {best_metric:.4f} " f"at epoch: {best_metric_epoch}")
+# print("-"*150)
+# print(f"train completed, best_metric: {best_metric:.4f} " f"at epoch: {best_metric_epoch}")
 
 
-plt.figure("train", (12, 6))
-plt.subplot(1, 2, 1)
-plt.title("Epoch Average Loss")
-x = [i + 1 for i in range(len(epoch_loss_values))]
-y = epoch_loss_values
-plt.xlabel("epoch")
-plt.plot(x, y)
-plt.subplot(1, 2, 2)
-plt.title("Val Mean Dice")
-x = [val_interval * (i + 1) for i in range(len(metric_values))]
-y = metric_values
-plt.xlabel("epoch")
-plt.plot(x, y)
-plt.savefig('figure2_loss_metric.png')
-plt.clf()
-# plt.show()
+# plt.figure("train", (12, 6))
+# plt.subplot(1, 2, 1)
+# plt.title("Epoch Average Loss")
+# x = [i + 1 for i in range(len(epoch_loss_values))]
+# y = epoch_loss_values
+# plt.xlabel("epoch")
+# plt.plot(x, y)
+# plt.subplot(1, 2, 2)
+# plt.title("Val Mean Dice")
+# x = [val_interval * (i + 1) for i in range(len(metric_values))]
+# y = metric_values
+# plt.xlabel("epoch")
+# plt.plot(x, y)
+# plt.savefig('figure2_loss_metric.png')
+# plt.clf()
+# # plt.show()
 
-####################################################################################################################################################
-# Check best model output with the input image and label
-print("-"*150)
-print("Check best model output with the input image and label")
+# ####################################################################################################################################################
+# # Check best model output with the input image and label
+# print("-"*150)
+# print("Check best model output with the input image and label")
 
 
-model.load_state_dict(torch.load(os.path.join(root_dir, "best_metric_model.pth")))
-model.eval()
-num_fig = 2
-with torch.no_grad():
-    for i, val_data in enumerate(val_loader):
-        num_fig+=1
-        roi_size = (160, 160, 160)
-        sw_batch_size = 4
-        val_outputs = sliding_window_inference(val_data["image"].to(device), roi_size, sw_batch_size, model)
-        # plot the slice [:, :, 80]
-        plt.figure("check", (18, 6))
-        plt.subplot(1, 3, 1)
-        plt.title(f"image {i}")
-        plt.imshow(val_data["image"][0, 0, :, :, 80], cmap="gray")
-        plt.subplot(1, 3, 2)
-        plt.title(f"label {i}")
-        plt.imshow(val_data["label"][0, 0, :, :, 80])
-        plt.subplot(1, 3, 3)
-        plt.title(f"output {i}")
-        plt.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, 80])
-        # plt.show()
-        plt.savefig(f'figure{num_fig}_bestmodel_with_inputimagelabel.png')
-        plt.clf()
-        if i == 2:
-            break
+# model.load_state_dict(torch.load(os.path.join(root_dir, "best_metric_model.pth")))
+# model.eval()
+# num_fig = 2
+# with torch.no_grad():
+#     for i, val_data in enumerate(val_loader):
+#         num_fig+=1
+#         roi_size = (32, 32, 32)
+#         sw_batch_size = 1
+#         val_outputs = sliding_window_inference(val_data["image"].to(device), roi_size, sw_batch_size, model)
+#         # plot the slice [:, :, 80]
+#         plt.figure("check", (18, 6))
+#         plt.subplot(1, 3, 1)
+#         plt.title(f"image {i}")
+#         plt.imshow(val_data["image"][0, 0, :, :, 5], cmap="gray")
+#         plt.subplot(1, 3, 2)
+#         plt.title(f"label {i}")
+#         plt.imshow(val_data["label"][0, 0, :, :, 5])
+#         plt.subplot(1, 3, 3)
+#         plt.title(f"output {i}")
+#         plt.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, 5])
+#         # plt.show()
+#         plt.savefig(f'figure{num_fig}_bestmodel_with_inputimagelabel.png')
+#         plt.clf()
+#         if i == 2:
+#             break
         
 ####################################################################################################################################################
-# Check best model output with the input image and label
+# Evaluation on original image spacings
 print("-"*150)
 print("Evaluation on original image spacings")
       
@@ -348,11 +371,11 @@ val_org_transforms = Compose(
         LoadImaged(keys=["image", "label"]),
         EnsureChannelFirstd(keys=["image", "label"]),
         Orientationd(keys=["image"], axcodes="RAS"),
-        Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
+        # Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
         ScaleIntensityRanged(
             keys=["image"],
-            a_min=-57,
-            a_max=164,
+            a_min=50,
+            a_max=800,
             b_min=0.0,
             b_max=1.0,
             clip=True,
@@ -388,8 +411,8 @@ model.eval()
 with torch.no_grad():
     for val_data in val_org_loader:
         val_inputs = val_data["image"].to(device)
-        roi_size = (160, 160, 160)
-        sw_batch_size = 4
+        roi_size = (32, 32, 32)
+        sw_batch_size = 1
         val_data["pred"] = sliding_window_inference(val_inputs, roi_size, sw_batch_size, model)
         val_data = [post_transforms(i) for i in decollate_batch(val_data)]
         val_outputs, val_labels = from_engine(["pred", "label"])(val_data)
@@ -402,3 +425,107 @@ with torch.no_grad():
     dice_metric.reset()
 
 print("Metric on original image spacing: ", metric_org)
+
+####################################################################################################################################################
+# Evaluation on original image spacings
+
+
+
+
+test_org_transforms = Compose(
+    [
+        LoadImaged(keys="image"),
+        EnsureChannelFirstd(keys="image"),
+        Orientationd(keys=["image"], axcodes="RAS"),
+        # Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
+        ScaleIntensityRanged(
+            keys=["image"],
+            a_min=50,
+            a_max=800,
+            b_min=0.0,
+            b_max=1.0,
+            clip=True,
+        ),
+        CropForegroundd(keys=["image"], source_key="image"),
+    ]
+)
+
+test_org_ds = Dataset(data=test_data, transform=test_org_transforms)
+
+test_org_loader = DataLoader(test_org_ds, batch_size=1, num_workers=4)
+
+post_transforms = Compose(
+    [
+        Invertd(
+            keys="pred",
+            transform=test_org_transforms,
+            orig_keys="image",
+            meta_keys="pred_meta_dict",
+            orig_meta_keys="image_meta_dict",
+            meta_key_postfix="meta_dict",
+            nearest_interp=False,
+            to_tensor=True,
+        ),
+        AsDiscreted(keys="pred", argmax=True, to_onehot=2),
+        SaveImaged(keys="pred", meta_keys="pred_meta_dict", output_dir="./out", output_postfix="seg", resample=False),
+    ]
+)
+
+
+model.load_state_dict(torch.load(os.path.join(root_dir, "best_metric_model.pth")))
+model.eval()
+from monai.transforms import LoadImage
+loader = LoadImage()
+with torch.no_grad():
+    for test_data in test_org_loader:
+        test_inputs = test_data["image"].to(device)
+        roi_size = (32, 32, 32)
+        sw_batch_size = 1
+        test_data["pred"] = sliding_window_inference(test_inputs, roi_size, sw_batch_size, model)
+
+        test_data = [post_transforms(i) for i in decollate_batch(test_data)]
+
+#         # uncomment the following lines to visualize the predicted results
+        test_output = from_engine(["pred"])(test_data)
+
+        original_image = loader(test_output[0].meta["filename_or_obj"])
+
+        # plt.figure("check", (18, 6))
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(original_image[3, :, :], cmap="gray")
+        # plt.subplot(1, 2, 2)
+        # plt.imshow()
+        # plt.show()
+        
+        size = original_image.shape
+        # print("SIZE TEST OUTOUT :  " ,test_output[0].detach().cpu().shape)
+        i = 0
+        for m in size :
+            i+=1
+            for num in range(m):
+                plt.figure(figsize=(12, 6))
+                if i==1:
+                    plt.subplot(1, 2, 1)
+                    plt.title("image")
+                    plt.imshow(original_image[num, :, :], cmap="gray")
+                    plt.subplot(1, 2, 2)
+                    plt.title("label")
+                    plt.imshow(test_output[0].detach().cpu()[1, num, :, :])
+                    plt.savefig(f'./image_test/x/demo_figure{num}_checkdata.png')
+                elif i==2:
+                    plt.subplot(1, 2, 1)
+                    plt.title("image")
+                    plt.imshow(original_image[:, num, :], cmap="gray")
+                    plt.subplot(1, 2, 2)
+                    plt.title("label")
+                    plt.imshow(test_output[0].detach().cpu()[1, :, num, :])
+                    plt.savefig(f'./image_test/y/demo_figure{num}_checkdata.png')
+                elif i==3:
+                    plt.subplot(1, 2, 1)
+                    plt.title("image")
+                    plt.imshow(original_image[:, :, num], cmap="gray")
+                    plt.subplot(1, 2, 2)
+                    plt.title("label")
+                    plt.imshow(test_output[0].detach().cpu()[1, :, :, num])
+                    plt.savefig(f'./image_test/z/demo_figure{num}_checkdata.png')
+                plt.close()
