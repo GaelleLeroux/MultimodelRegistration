@@ -73,11 +73,11 @@ def center():
 
 
     input_folder = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/imagesTr/"
-    output_folder = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/test_orientation/"
+    output_folder = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/z06_center/image/"
     
     path = lister_fichiers(input_folder)
-    path = ["/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/imagesTr/M004_MRI.nii.gz"]
-    output_folder = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/test_orientation/"
+    # path = ["/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/imagesTr/M004_MRI.nii.gz"]
+    # output_folder = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/test_orientation/"
     
     for input_file in path :
 
