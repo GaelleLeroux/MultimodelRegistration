@@ -10,10 +10,12 @@
 # limitations under the License.
 
 import logging
+import argparse
 import os
 import sys
 import tempfile
 from glob import glob
+import glob
 
 import torch
 from PIL import Image
@@ -35,18 +37,39 @@ from monai.transforms import (
 
 
 def main(tempdir):
-    monai.config.print_config()
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    # monai.config.print_config()
+    # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-    print(f"generating synthetic data to {tempdir} (this may take a while)")
-    for i in range(5):
-        im, seg = create_test_image_2d(128, 128, num_seg_classes=1)
-        Image.fromarray((im * 255).astype("uint8")).save(os.path.join(tempdir, f"img{i:d}.png"))
-        Image.fromarray((seg * 255).astype("uint8")).save(os.path.join(tempdir, f"seg{i:d}.png"))
+    # print(f"generating synthetic data to {tempdir} (this may take a while)")
+    # for i in range(5):
+    #     im, seg = create_test_image_2d(128, 128, num_seg_classes=1)
+    #     Image.fromarray((im * 255).astype("uint8")).save(os.path.join(tempdir, f"img{i:d}.png"))
+    #     Image.fromarray((seg * 255).astype("uint8")).save(os.path.join(tempdir, f"seg{i:d}.png"))
 
-    images = sorted(glob(os.path.join(tempdir, "img*.png")))
-    segs = sorted(glob(os.path.join(tempdir, "seg*.png")))
-    val_files = [{"img": img, "seg": seg} for img, seg in zip(images, segs)]
+    # images = sorted(glob(os.path.join(tempdir, "img*.png")))
+    # segs = sorted(glob(os.path.join(tempdir, "seg*.png")))
+    # val_files = [{"img": img, "seg": seg} for img, seg in zip(images, segs)]
+    
+    data_dir = args.data
+    model_dir = args.model
+
+    pattern_images = os.path.join(data_dir, "ImagesTr","**", "*.png")
+    pattern_labels = os.path.join(data_dir, "LabelsTr","**", "*.png")
+    train_images = sorted(glob.glob(pattern_images,recursive=True))
+    train_labels = sorted(glob.glob(pattern_labels,recursive=True))
+    
+
+    data_dicts = [{"img": image_name, "seg": label_name} for image_name, label_name in zip(train_images, train_labels)]
+    num_test_files = 0
+    num_val_files = 10
+
+    test_data = data_dicts[:num_test_files]
+    val_files = data_dicts[num_test_files:num_test_files + num_val_files]
+    train_files = data_dicts[num_test_files + num_val_files:]
+    
+    print("*"*50)
+    print("val_files : \n",val_files)
+    print("*"*50)
 
     # define transforms for image and segmentation
     val_transforms = Compose(
@@ -61,7 +84,7 @@ def main(tempdir):
     val_loader = DataLoader(val_ds, batch_size=1, num_workers=4, collate_fn=list_data_collate)
     dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
     post_trans = Compose([Activations(sigmoid=True), AsDiscrete(threshold=0.5)])
-    saver = SaveImage(output_dir="./output", output_ext=".png", output_postfix="seg")
+    saver = SaveImage(output_dir=args.out, output_ext=".png", output_postfix="seg")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = UNet(
         spatial_dims=2,
@@ -72,7 +95,7 @@ def main(tempdir):
         num_res_units=2,
     ).to(device)
 
-    model.load_state_dict(torch.load("best_metric_model_segmentation2d_dict.pth"))
+    model.load_state_dict(torch.load(model_dir))
 
     model.eval()
     with torch.no_grad():
@@ -95,5 +118,10 @@ def main(tempdir):
 
 
 if __name__ == "__main__":
-    with tempfile.TemporaryDirectory() as tempdir:
-        main(tempdir)
+    parser = argparse.ArgumentParser(description='Get nifti info')
+    parser.add_argument('--data', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/2D_Training/', help='Input folder')
+    parser.add_argument('--model', type=str, default='/home/luciacev/Documents/Gaelle/MultimodelRegistration/monai_2d/output_model/best_metric_model_segmentation2d_dict.pth', help='Output directory tosave the png')
+    parser.add_argument('--out', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/2D_Training/z07_output_png_monai/test1/', help='Output directory tosave the png')
+    args = parser.parse_args()
+
+    main(args)

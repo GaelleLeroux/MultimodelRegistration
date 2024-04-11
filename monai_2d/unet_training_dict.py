@@ -40,16 +40,6 @@ import glob
 import matplotlib.pyplot as plt
 
 def main(args):
-    # monai.config.print_config()
-    # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
-    # # create a temporary directory and 40 random image, mask pairs
-    # print(f"generating synthetic data to {tempdir} (this may take a while)")
-    # for i in range(40):
-    #     im, seg = create_test_image_2d(128, 128, num_seg_classes=1)
-    #     Image.fromarray((im * 255).astype("uint8")).save(os.path.join(tempdir, f"img{i:d}.png"))
-    #     Image.fromarray((seg * 255).astype("uint8")).save(os.path.join(tempdir, f"seg{i:d}.png"))
-    
     data_dir = args.data
     model_dir = args.model
 
@@ -70,11 +60,6 @@ def main(args):
     val_files = data_dicts[num_test_files:num_test_files + num_val_files]
     train_files = data_dicts[num_test_files + num_val_files:]
 
-    # images = sorted(glob(os.path.join(tempdir, "img*.png")))
-    # segs = sorted(glob(os.path.join(tempdir, "seg*.png")))
-    # train_files = [{"img": img, "seg": seg} for img, seg in zip(images[:20], segs[:20])]
-    # val_files = [{"img": img, "seg": seg} for img, seg in zip(images[-20:], segs[-20:])]
-    
     print("train_files : ",train_files)
     print("*"*150)
     print("val_files : ",val_files)
@@ -87,7 +72,7 @@ def main(args):
             EnsureChannelFirstd(keys=["img", "seg"]),
             ScaleIntensityd(keys=["img", "seg"]),
             RandCropByPosNegLabeld(
-                keys=["img", "seg"], label_key="seg", spatial_size=[96, 96], pos=1, neg=1, num_samples=4
+                keys=["img", "seg"], label_key="seg", spatial_size=[48, 48], pos=1, neg=1, num_samples=4
             ),
             RandRotate90d(keys=["img", "seg"], prob=0.5, spatial_axes=[0, 1]),
         ]
@@ -173,7 +158,7 @@ def main(args):
                 val_outputs = None
                 for val_data in val_loader:
                     val_images, val_labels = val_data["img"].to(device), val_data["seg"].to(device)
-                    roi_size = (96, 96)
+                    roi_size = (48, 48)
                     sw_batch_size = 4
                     val_outputs = sliding_window_inference(val_images, roi_size, sw_batch_size, model)
                     val_outputs = [post_trans(i) for i in decollate_batch(val_outputs)]
