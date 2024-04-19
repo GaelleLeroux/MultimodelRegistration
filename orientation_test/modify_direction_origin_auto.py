@@ -2,6 +2,8 @@ import os
 import SimpleITK as sitk
 import argparse
 
+# THIS FILE IS WORKING WELL
+
 def extract_id(filename):
     """
     Extracts and returns the ID from a filename, removing common NIfTI extensions.
@@ -31,7 +33,9 @@ def calculate_new_origin(image):
     spacing = image.GetSpacing()
     # Calculate the center offset for each axis
     new_origin = [(size[i] * spacing[i]) / 2 for i in range(len(size))]
-    new_origin = [new_origin[2],-new_origin[0],new_origin[1]]
+    new_origin = [new_origin[2],-new_origin[0],new_origin[1]] # FOR MRI
+    new_origin = [-new_origin[0]*1.5,new_origin[1],-new_origin[2]*0.5] # FOR CBCT
+    # new_origin = [-new_origin[0]*1,new_origin[1],-new_origin[2]*1] # SAVE INSIDE BUT NOT CENTER
     return tuple(new_origin)
 
 def modify_image_properties(nifti_file_path, new_direction, output_file_path=None):
@@ -87,7 +91,10 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Modify NIfTI file directions and center them.")
     parser.add_argument('--input', default = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/More_DATA_to_center/MRs_Anonymized_bil/', help='Path to the input folder containing NIfTI files.')
-    parser.add_argument('--direction', default = "0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0",  help='New direction for the NIfTI files, specified as a comma-separated string of floats.')
+    parser.add_argument('--direction', default = "1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0",  help='New direction for the NIfTI files, specified as a comma-separated string of floats. ')
     parser.add_argument('--output', default = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/More_DATA_to_center/MRs_Anonymized_bil_OR/', help='Path to the output folder where modified NIfTI files will be saved.')
     args = parser.parse_args()
     main(args)
+
+# USE THIS DIRECTION FOR MRI : "0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0"
+# FOR CBCT : "1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0"

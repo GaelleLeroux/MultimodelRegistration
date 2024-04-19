@@ -54,7 +54,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Get nifti info')
     parser.add_argument('--input', type=str, default='Data_test_AREG', help='Input folder')
     parser.add_argument('--output', type=str, default='.', help='Output directory for the aggregated CSV file')
-    parser.add_argument('--csv', type=str, default='Nifti_info.csv', help='Output directory for the aggregated CSV file')
+    parser.add_argument('--csv', type=str, default='Nifti_info.csv', help='name of the csv')
     args = parser.parse_args()
 
     # if output folder does not exist, create it
