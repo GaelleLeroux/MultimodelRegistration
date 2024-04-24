@@ -6,6 +6,92 @@ import glob
 import sys
 import csv
 
+def adjust_origin_to_center_image(img):
+    # Calculer le centre actuel de l'image
+    size = img.GetSize()
+    spacing = img.GetSpacing()
+    origin = img.GetOrigin()
+
+    # Calculer le centre physique de l'image
+    physical_size = np.array(size) * np.array(spacing)
+    current_center = np.array(origin) + physical_size / 2
+
+    # Calculer le nouveau centre souhaité (au milieu de chaque dimension)
+    new_center = physical_size / 2
+
+    # Calculer le nouvel origine pour centrer l'image
+    new_origin = np.array(origin) + (new_center - current_center)
+
+    # Mettre à jour l'origine de l'image
+    img.SetOrigin(new_origin.tolist())
+
+    return img
+
+def center_and_pad_image(img, desired_size):
+    # Obtenir les informations actuelles de l'image
+    size = img.GetSize()
+    spacing = img.GetSpacing()
+    origin = img.GetOrigin()
+
+    # Calculer le centre physique actuel de l'image
+    physical_size = np.array(size) * np.array(spacing)
+    current_center = np.array(origin) + physical_size / 2
+
+    # Calculer la taille physique désirée
+    desired_physical_size = np.array(desired_size) * np.array(spacing)
+    new_center = desired_physical_size / 2
+
+    # Calculer le nouvel origine pour centrer l'image
+    new_origin = np.array(origin) + (new_center - current_center)
+
+    # Créer un filtre pour le padding
+    pad_filter = sitk.ConstantPadImageFilter()
+
+    # Calculer les valeurs de padding nécessaires
+    lower_padding = [max(0, (ds - s) // 2) for ds, s in zip(desired_size, size)]
+    upper_padding = [max(0, ds - s - lp) for ds, s, lp in zip(desired_size, size, lower_padding)]
+
+    # Appliquer le padding
+    padded_img = pad_filter.Execute(img, lower_padding, upper_padding, 0) # 0 est la valeur de padding
+    padded_img.SetOrigin(new_origin.tolist())
+
+    return padded_img
+
+
+def center_image_fully_sitk(img):
+    # Convertir SimpleITK.Image en numpy array
+    data = sitk.GetArrayFromImage(img)
+
+    # Obtenir les dimensions
+    sz, sy, sx = data.shape
+
+    # Identifier les tranches non-noires dans les trois dimensions
+    non_black_x = np.any(data, axis=(0, 1))
+    non_black_y = np.any(data, axis=(0, 2))
+    non_black_z = np.any(data, axis=(1, 2))
+
+    # Calculer les indices minimaux et maximaux non-noirs pour chaque axe
+    xmin, xmax = np.where(non_black_x)[0][[0, -1]] if np.any(non_black_x) else (0, sx)
+    ymin, ymax = np.where(non_black_y)[0][[0, -1]] if np.any(non_black_y) else (0, sy)
+    zmin, zmax = np.where(non_black_z)[0][[0, -1]] if np.any(non_black_z) else (0, sz)
+
+    # Déterminer les centres des indices non-noirs
+    center_x, center_y, center_z = (xmin + xmax) // 2, (ymin + ymax) // 2, (zmin + zmax) // 2
+
+    # Calculer les décalages nécessaires pour centrer l'image
+    shift_x, shift_y, shift_z = sx//2 - center_x, sy//2 - center_y, sz//2 - center_z
+
+    # Appliquer les décalages à chaque dimension
+    data = np.roll(data, shift_x, axis=2)
+    data = np.roll(data, shift_y, axis=1)
+    data = np.roll(data, shift_z, axis=0)
+
+    # Convertir le numpy array centré en SimpleITK.Image
+    centered_img = sitk.GetImageFromArray(data)
+    centered_img.CopyInformation(img)  # Copier les informations de l'image originale
+
+    return centered_img
+
 def resample_fn(img, args):
     output_size = args.size 
     fit_spacing = args.fit_spacing
@@ -29,6 +115,7 @@ def resample_fn(img, args):
     size = img.GetSize()
 
     output_origin = img.GetOrigin()
+    input_origin = img.GetOrigin()
     output_size = [si if o_si == -1 else o_si for si, o_si in zip(size, output_size)]
 
     if(fit_spacing):
@@ -51,16 +138,18 @@ def resample_fn(img, args):
     if(args.origin is not None):
         output_origin = args.origin
 
-    # if(center):
-    #     output_physical_size = np.array(output_size)*np.array(output_spacing)
-    #     input_physical_size = np.array(size)*np.array(spacing)
-    #     output_origin = np.array(output_origin) - (output_physical_size - input_physical_size)/2.0
+    if(center):
+        output_physical_size = np.array(output_size)*np.array(output_spacing)
+        input_physical_size = np.array(size)*np.array(spacing)
+        # output_origin = np.array(output_origin) - (output_physical_size - input_physical_size)/2.0
+        output_origin = np.array(output_origin) + input_physical_size/2
 
     print("Input size:", size)
     print("Input spacing:", spacing)
     print("Output size:", output_size)
     print("Output spacing:", output_spacing)
     print("Output origin:", output_origin)
+    print("Input Origin : ",input_origin)
 
     resampleImageFilter = sitk.ResampleImageFilter()
     resampleImageFilter.SetInterpolator(InterpolatorType)   
@@ -68,11 +157,12 @@ def resample_fn(img, args):
     resampleImageFilter.SetSize(output_size)
     resampleImageFilter.SetOutputDirection(img.GetDirection())
     resampleImageFilter.SetOutputOrigin(output_origin)
-    # resampleImageFilter.SetDefaultPixelValue(zeroPixel)
     
+    resampled_img = resampleImageFilter.Execute(img)
+    # resampleImageFilter.SetDefaultPixelValue(zeroPixel)
+    resampled_img = adjust_origin_to_center_image(resampled_img)
 
-    return resampleImageFilter.Execute(img)
-
+    return resampled_img
 
 def Resample(img_filename, args):
 
@@ -87,8 +177,13 @@ def Resample(img_filename, args):
 
     if(args.img_spacing):
         img.SetSpacing(args.img_spacing)
+        
+    resampled_img = resample_fn(img,args)      
+    desired_size = [int(sz * osz / sp) for sz, sp, osz in zip(img.GetSize(), img.GetSpacing(), resampled_img.GetSpacing())]
+    centered_padded_img = center_and_pad_image(resampled_img, desired_size)
+    return centered_padded_img
 
-    return resample_fn(img, args)
+    # return resample_fn(img, args)
 
 
 if __name__ == "__main__":

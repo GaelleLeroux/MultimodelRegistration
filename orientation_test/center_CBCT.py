@@ -73,7 +73,13 @@ def center(args):
     # train_images = sorted(glob.glob(args.input_image))
     # train_labels = sorted(glob.glob(args.input_label))
     
-    train_images = sorted(glob.glob(os.path.join(args.input_image, "*.nii")))
+    train_images = sorted(glob.glob(os.path.join(args.input_image, "*.nii","*.nii.gz")))
+    train_images_nii = glob.glob(os.path.join(input_image_directory, "*.nii"))
+    train_images_niigz = glob.glob(os.path.join(input_image_directory, "*.nii.gz"))
+
+    # Combine les deux listes
+    train_images = sorted(train_images_nii + train_images_niigz)
+    print("train_images : ",train_images)
 
 
     input_folder_image = args.input_image

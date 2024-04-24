@@ -9,6 +9,7 @@ def main(args):
     # Remplacez ceci par le chemin vers votre fichier CSV
     csv_file_path = args.csv
     # Ouvrir le fichier CSV en lecture
+    #RESAMPLE
     with open(csv_file_path, mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         
@@ -20,15 +21,17 @@ def main(args):
             out_path = row["out"]
             print(size[1])
             print(f'Image d\'entrée: {row["in"]}, Image de sortie: {row["out"]}, Taille: {size}')
-            command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 224 224 {str(size[2])} --spacing 3 3 3 --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
+            # command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 768 576 768 --spacing 0.3 0.3 0.3 --center False --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
+            command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 119 443 443 --spacing 0.3 0.3 0.3 --center False --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
             subprocess.run(command,shell=True)
+            
 
 
 if __name__=="__main__":
     # SIZE AND SPACING TO RESAMPLE ARE HARD WRITTEN IN THE LINE 24
     parser = argparse.ArgumentParser(description='Get nifti info')
     parser.add_argument('--csv', required=True,type=str, help='name of the CSV')
-    parser.add_argument('--python_file', required=True,type=str, help='path to resample.py')
+    parser.add_argument('--python_file', default="/home/luciacev/Documents/Gaelle/MultimodelRegistration/resample/resample.py",type=str, help='path to resample.py')
     # /home/luciacev/Documents/Gaelle/MultimodelRegistration/resample/resample.py
     args = parser.parse_args()
 
