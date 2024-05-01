@@ -22,7 +22,7 @@ def main(args):
             print(size[1])
             print(f'Image d\'entrée: {row["in"]}, Image de sortie: {row["out"]}, Taille: {size}')
             # command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 768 576 768 --spacing 0.3 0.3 0.3 --center False --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
-            command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 119 443 443 --spacing 0.3 0.3 0.3 --center False --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
+            command = [f"python3 {args.python_file} --img \"{input_path}\" --out \"{out_path}\" --size 443 443 119 --spacing 0.3 0.3 0.3 --center False --linear False --fit_spacing True --image_dimension 3 --pixel_dimension 1 --rgb False --ow 0"]
             subprocess.run(command,shell=True)
             
 
