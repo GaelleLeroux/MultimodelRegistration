@@ -27,13 +27,19 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import NeptuneLogger
 from pytorch_lightning.strategies.ddp import DDPStrategy
 
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
+
 def main(args):
     
     ################################################################################################################################################################3
 
     # define transforms for image and segmentation
-    train_transforms = TrainTransforms()
-    val_transforms = ValidTransforms()
+    x=32
+    y=64
+    z=64
+    train_transforms = TrainTransforms(x,y,z)
+    val_transforms = ValidTransforms(x,y,z)
     
     loader = LotusDataModule(args.train_csv,args.val_csv,args.test_csv,args.batch_size,args.num_workers,args.img_column,args.seg_column,train_transforms,val_transforms)
     loader.setup()
@@ -101,24 +107,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='2D Segmentation MRI training')
     
     input_group = parser.add_argument_group('Input')
-    input_group.add_argument('--test_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/training/label2/test.csv', help='path csv test')
-    input_group.add_argument('--train_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/training/label2/train.csv', help='path train csv')
-    input_group.add_argument('--val_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/training/label2/valid.csv', help='pat valid csv')
+    input_group.add_argument('--test_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/test.csv', help='path csv test')
+    input_group.add_argument('--train_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/train.csv', help='path train csv')
+    input_group.add_argument('--val_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/valid.csv', help='pat valid csv')
     input_group.add_argument('--img_column', type=str, default='mri', help='name colum for image path')
     input_group.add_argument('--seg_column', type=str, default='seg', help='name colum for segmentation path')
     input_group.add_argument('--patience', help='Max number of patience for early stopping', type=int, default=25)
     
-    input_group.add_argument('--batch_size', type=int, default=2, help='batch_size')
-    input_group.add_argument('--num_workers', type=int, default=4, help='number workers')
+    input_group.add_argument('--batch_size', type=int, default=1, help='batch_size')
+    input_group.add_argument('--num_workers', type=int, default=2, help='number workers')
     input_group.add_argument('--epochs', type=int, default=300, help='number echo')
 
     output_group = parser.add_argument_group('Output')
-    output_group.add_argument('--out', help='Output directory', type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/output")
+    output_group.add_argument('--out', help='Output directory', type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv")
 
     log_group = parser.add_argument_group('Logging')
-    log_group.add_argument('--neptune_tags', help='Neptune tags', type=str, nargs="+", default="Seg,comp1")
+    log_group.add_argument('--neptune_tags', help='Neptune tags', type=str, nargs="+", default="Seg,3D,comp1")
     log_group.add_argument('--logger', help='Neptune tags', type=str, nargs="+", default="SegmentationLogger")
-    log_group.add_argument('--log_steps', help='Log every N steps', type=int, default=100)
+    log_group.add_argument('--log_steps', help='Log every N steps', type=int, default=15)
     log_group.add_argument('--steps', type=int, default=-1, help='Max steps')
     args = parser.parse_args()
 

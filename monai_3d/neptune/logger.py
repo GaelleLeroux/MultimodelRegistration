@@ -21,19 +21,37 @@ class SegmentationLogger(Callback):
                     input_image = inputs[i].cpu().numpy().squeeze()
                     label_image = labels[i].cpu().numpy().squeeze()
 
+                    # Extraire la slice du milieu
+                    mid_slice = input_image.shape[self.slice_axis] // 2
+                    if self.slice_axis == 0:
+                        input_slice = input_image[mid_slice, :, :]
+                        label_slice = label_image[mid_slice, :, :]
+                    elif self.slice_axis == 1:
+                        input_slice = input_image[:, mid_slice, :]
+                        label_slice = label_image[:, mid_slice, :]
+                    else:
+                        input_slice = input_image[:, :, mid_slice]
+                        label_slice = label_image[:, :, mid_slice]
+
                     # Passage dans le modèle pour obtenir les sorties
                     output = pl_module(inputs[i].unsqueeze(0)).squeeze().cpu().numpy()
+                    if self.slice_axis == 0:
+                        output_slice = output[mid_slice, :, :]
+                    elif self.slice_axis == 1:
+                        output_slice = output[:, mid_slice, :]
+                    else:
+                        output_slice = output[:, :, mid_slice]
 
                     # Affichage des images d'origine et des sorties de modèle
-                    axs[i, 0].imshow(input_image, cmap='gray')
+                    axs[i, 0].imshow(input_slice, cmap='gray')
                     axs[i, 0].set_title(f'Original Image {i}')
                     axs[i, 0].axis('off')
 
-                    axs[i, 1].imshow(label_image, cmap='gray')
+                    axs[i, 1].imshow(label_slice, cmap='gray')
                     axs[i, 1].set_title(f'Ground Truth {i}')
                     axs[i, 1].axis('off')
 
-                    axs[i, 2].imshow(output, cmap='gray')
+                    axs[i, 2].imshow(output_slice, cmap='gray')
                     axs[i, 2].set_title(f'Model Output {i}')
                     axs[i, 2].axis('off')
 

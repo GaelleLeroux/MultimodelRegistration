@@ -32,16 +32,14 @@ class LotusDataset(Dataset):
             "img": row[self.img_column],
             "seg": row[self.seg_column]
         }
-        # print("data_dict : ",data_dict)
-        data_dict = self.load(data_dict)
-        print("data_dict type 'img': ",type(data_dict['img']))
+
         if self.transform:
             data_dict = self.transform(data_dict)
         
         return data_dict
     
 class LotusDataModule(pl.LightningDataModule):
-    def __init__(self, train_csv, val_csv, test_csv, batch_size=2, num_workers=4, img_column="mri", seg_column="seg", train_transform=None, valid_transform=None, test_transform=None):
+    def __init__(self, train_csv, val_csv, test_csv, batch_size=2, num_workers=2, img_column="mri", seg_column="seg", train_transform=None, valid_transform=None, test_transform=None):
         super().__init__()
         self.train_csv = train_csv
         self.val_csv = val_csv
@@ -55,18 +53,18 @@ class LotusDataModule(pl.LightningDataModule):
         self.test_transform = test_transform      
 
     def setup(self, stage=None):
-        self.train_ds = monai.data.Dataset(data=LotusDataset(self.train_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.train_transform)
-        self.val_ds = monai.data.Dataset(data=LotusDataset(self.val_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.valid_transform)
-        self.test_ds = monai.data.Dataset(data=LotusDataset(self.test_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.test_transform)
+        self.train_ds = monai.data.CacheDataset(data=LotusDataset(self.train_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.train_transform, cache_rate=1.0, num_workers=self.num_workers)
+        self.val_ds = monai.data.CacheDataset(data=LotusDataset(self.val_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.valid_transform, cache_rate=1.0, num_workers=self.num_workers)
+        self.test_ds = monai.data.CacheDataset(data=LotusDataset(self.test_csv, img_column=self.img_column, seg_column=self.seg_column), transform=self.test_transform, cache_rate=1.0, num_workers=self.num_workers)
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, collate_fn=list_data_collate, pin_memory=torch.cuda.is_available())
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers, collate_fn=list_data_collate)
+        return DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=self.num_workers, collate_fn=list_data_collate)
+        return DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def train_dataset(self):
         return self.train_ds
