@@ -12,6 +12,9 @@ from monai.transforms import (
     ScaleIntensityRanged,
     Spacingd,
     Invertd,
+    ScaleIntensityd,
+    Resized,
+    ToTensord
 )
 from monai.handlers.utils import from_engine
 from monai.networks.nets import UNet
@@ -28,28 +31,36 @@ import tempfile
 import shutil
 import os
 import glob
+from loaders_csv import LotusDataset
 
 print_config()
 print("*"*150)
 
-data_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/"
-root_dir = "/home/luciacev/Documents/Gaelle/MultimodelRegistration/monai_test/model_output/"
+# data_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/"
+# root_dir = "/home/luciacev/Documents/Gaelle/MultimodelRegistration/monai_test/model_output/"
 
-train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
-train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
+# train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
+# train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
 
-data_dicts = [{"image": image_name, "label": label_name} for image_name, label_name in zip(train_images, train_labels)]
-num_test_files = 0
-num_val_files = 6
+# data_dicts = [{"img": image_name, "seg": label_name} for image_name, label_name in zip(train_images, train_labels)]
+# num_test_files = 0
+# num_val_files = 6
 
-assert len(data_dicts) > num_test_files + num_val_files, "Il n'y a pas assez de fichiers pour les ensembles spécifiés."
+# assert len(data_dicts) > num_test_files + num_val_files, "Il n'y a pas assez de fichiers pour les ensembles spécifiés."
 
-# Répartition des données entre les ensembles de test, de validation, et d'entraînement
-test_data = data_dicts[:num_test_files]
-val_files = data_dicts[num_test_files:num_test_files + num_val_files]
-train_files = data_dicts[num_test_files + num_val_files:]
+# # Répartition des données entre les ensembles de test, de validation, et d'entraînement
+# test_data = data_dicts[:num_test_files]
+# val_files = data_dicts[num_test_files:num_test_files + num_val_files]
+# train_files = data_dicts[num_test_files + num_val_files:]
 
+root_dir = "/home/luciacev/Documents/Gaelle/Data/MultimodelReg/MRI_Seg/CB_training_csv/"
+train_files_dataset = LotusDataset("/home/luciacev/Documents/Gaelle/Data/MultimodelReg/MRI_Seg/CB_training_csv/train.csv")
+val_files_dataset = LotusDataset("/home/luciacev/Documents/Gaelle/Data/MultimodelReg/MRI_Seg/CB_training_csv/valid.csv")
+test_data_dataset = LotusDataset("/home/luciacev/Documents/Gaelle/Data/MultimodelReg/MRI_Seg/CB_training_csv/test.csv")
 
+train_files = [train_files_dataset[i] for i in range(len(train_files_dataset))]
+val_files = [val_files_dataset[i] for i in range(len(val_files_dataset))]
+test_data = [test_data_dataset[i] for i in range(len(test_data_dataset))]
 
 print("train_files : ",train_files)
 print("val_files : ",val_files)
@@ -58,63 +69,46 @@ print("*"*150)
 print("size(train_files) : ",len(train_files))
 print("size(val_files) : ",len(val_files))
 print("size(test_data) : ",len(test_data))
+# yep = int(input("What is the temperature in degrees Fahrenheit?"))
 
 set_determinism(seed=0)
-
+x=32
+y=64
+z=64
 
 train_transforms = Compose(
-    [
-        LoadImaged(keys=["image", "label"]),
-        EnsureChannelFirstd(keys=["image", "label"]),
-        # ScaleIntensityRanged(
-        #     keys=["image"],
-        #     a_min=50,
-        #     a_max=800,
-        #     b_min=0.0,
-        #     b_max=1.0,
-        #     clip=True,
-        # ),
-        CropForegroundd(keys=["image", "label"], source_key="image"),
-        Orientationd(keys=["image", "label"], axcodes="RAS"),
-        # Spacingd(keys=["image", "label"], pixdim=(0.46, 0.46, 2.46), mode=("bilinear", "nearest")),
-        RandCropByPosNegLabeld(
-            keys=["image", "label"],
-            label_key="label",
-            spatial_size=(7, 16, 16),
-            pos=1,
-            neg=1,
-            num_samples=4,
-            image_key="image",
-            image_threshold=0,
-        ),
-        # user can also add other random transforms
-        # RandAffined(
-        #     keys=['image', 'label'],
-        #     mode=('bilinear', 'nearest'),
-        #     prob=1.0, spatial_size=(96, 96, 96),
-        #     rotate_range=(0, 0, np.pi/15),
-        #     scale_range=(0.1, 0.1, 0.1)),
-    ]
-)
+            [
+                LoadImaged(keys=["img", "seg"]),
+                EnsureChannelFirstd(keys=["img", "seg"]),
+                ScaleIntensityd(keys=["img", "seg"]),
+                CropForegroundd(keys=["img", "seg"], source_key="img"),
+                Orientationd(keys=["img", "seg"], axcodes="RAS"),
+                Resized(keys=["img", "seg"], spatial_size=(x, y, z)),  # Ajustez la taille selon vos besoins
+                RandCropByPosNegLabeld(
+                    keys=["img", "seg"],
+                    label_key="seg",
+                    spatial_size=(x/2, y/2, z/2),
+                    pos=1,
+                    neg=1,
+                    num_samples=4,
+                    image_key="img",
+                    image_threshold=0,
+                ),
+                ToTensord(keys=["img", "seg"]),
+            ]
+        )
+
 val_transforms = Compose(
-    [
-        LoadImaged(keys=["image", "label"]),
-        EnsureChannelFirstd(keys=["image", "label"]),
-        # ScaleIntensityRanged(
-        #     keys=["image"],
-        #     # a_min=50,
-        #     # a_max=350,
-        #     a_min=50,
-        #     a_max=800,
-        #     b_min=0.0,
-        #     b_max=1.0,
-        #     clip=True,
-        # ),
-        CropForegroundd(keys=["image", "label"], source_key="image"),
-        Orientationd(keys=["image", "label"], axcodes="RAS"),
-        # Spacingd(keys=["image", "label"], pixdim=(0.46, 0.46, 2.46), mode=("bilinear", "nearest")),
-    ]
-)
+            [
+                LoadImaged(keys=["img", "seg"]),
+                EnsureChannelFirstd(keys=["img", "seg"]),
+                ScaleIntensityd(keys=["img", "seg"]),
+                CropForegroundd(keys=["img", "seg"], source_key="img"),
+                Orientationd(keys=["img", "seg"], axcodes="RAS"),
+                Resized(keys=["img", "seg"], spatial_size=(x, y, z)),  # Ajustez la taille selon vos besoins
+                ToTensord(keys=["img", "seg"]),
+            ]
+        )
 
 print("-"*150)
 print("DATA CHECK")
@@ -122,23 +116,23 @@ print("DATA CHECK")
 check_ds = Dataset(data=val_files, transform=val_transforms)
 check_loader = DataLoader(check_ds, batch_size=1)
 check_data = first(check_loader)
-image, label = (check_data["image"][0][0], check_data["label"][0][0])
+image, label = (check_data["img"][0][0], check_data["seg"][0][0])
 print(f"image shape: {image.shape}, label shape: {label.shape}")
 print(check_data.keys())
-print(check_data['image'].meta.keys()) # Si vous utilisez une version de MONAI où les métadonnées sont directement attachées à l'objet Tensor
+print(check_data['img'].meta.keys()) # Si vous utilisez une version de MONAI où les métadonnées sont directement attachées à l'objet Tensor
 
-image_path = check_data["image"].meta['filename_or_obj']
-label_path = check_data["label"].meta['filename_or_obj']
+image_path = check_data["img"].meta['filename_or_obj']
+label_path = check_data["seg"].meta['filename_or_obj']
 
 print(f"Image path: {image_path}")
 print(f"Label path: {label_path}")
 # plot the slice [:, :, 80]
 # plt.figure("check", (12, 6))
 # plt.subplot(1, 2, 1)
-# plt.title("image")
+# plt.title("img")
 # plt.imshow(image[:, 8, :], cmap="gray")
 # plt.subplot(1, 2, 2)
-# plt.title("label")
+# plt.title("seg")
 # plt.imshow(label[:, 8, :])
 
 # plt.savefig('figure1_checkdata.png')
@@ -153,26 +147,26 @@ print("size : ",size)
 #         plt.figure(figsize=(12, 6))
 #         if i==1:
 #             plt.subplot(1, 2, 1)
-#             plt.title("image")
+#             plt.title("img")
 #             plt.imshow(image[num, :, :], cmap="gray")
 #             plt.subplot(1, 2, 2)
-#             plt.title("label")
+#             plt.title("seg")
 #             plt.imshow(label[num, :, :])
 #             plt.savefig(f'./image_mine_50_800/x/demo_figure{num}_checkdata.png')
 #         elif i==2:
 #             plt.subplot(1, 2, 1)
-#             plt.title("image")
+#             plt.title("img")
 #             plt.imshow(image[:, num, :], cmap="gray")
 #             plt.subplot(1, 2, 2)
-#             plt.title("label")
+#             plt.title("seg")
 #             plt.imshow(label[:, num, :])
 #             plt.savefig(f'./image_mine_50_800/y/demo_figure{num}_checkdata.png')
 #         elif i==3:
 #             plt.subplot(1, 2, 1)
-#             plt.title("image")
+#             plt.title("img")
 #             plt.imshow(image[:, :, num], cmap="gray")
 #             plt.subplot(1, 2, 2)
-#             plt.title("label")
+#             plt.title("seg")
 #             plt.imshow(label[:, :, num])
 #             plt.savefig(f'./image_mine_50_800/z/demo_figure{num}_checkdata.png')
 #         plt.close()
@@ -247,11 +241,11 @@ for epoch in range(max_epochs):
     for batch_data in train_loader:
         step += 1
         inputs, labels = (
-            batch_data["image"].to(device),
-            batch_data["label"].to(device),
+            batch_data["img"].to(device),
+            batch_data["seg"].to(device),
         )
         optimizer.zero_grad()
-        # inputs, labels = batch_data["image"].to(device), batch_data["label"].to(device)
+        # inputs, labels = batch_data["img"].to(device), batch_data["seg"].to(device)
         print(f"Shape of batch inputs: {inputs.shape}, Shape of batch labels: {labels.shape}")
         # input2 = inputs[0,0,:,:,:]
         outputs = model(inputs)
@@ -273,8 +267,8 @@ for epoch in range(max_epochs):
             for val_data in val_loader:
                 num+=1
                 val_inputs, val_labels = (
-                    val_data["image"].to(device),
-                    val_data["label"].to(device),
+                    val_data["img"].to(device),
+                    val_data["seg"].to(device),
                 )
                 roi_size = (32, 32, 32)
                 sw_batch_size = 1
@@ -343,15 +337,15 @@ with torch.no_grad():
         num_fig+=1
         roi_size = (32, 32, 32)
         sw_batch_size = 1
-        val_outputs = sliding_window_inference(val_data["image"].to(device), roi_size, sw_batch_size, model)
+        val_outputs = sliding_window_inference(val_data["img"].to(device), roi_size, sw_batch_size, model)
         # plot the slice [:, :, 80]
         plt.figure("check", (18, 6))
         plt.subplot(1, 3, 1)
         plt.title(f"image {i}")
-        plt.imshow(val_data["image"][0, 0, :, :, 5], cmap="gray")
+        plt.imshow(val_data["img"][0, 0, :, :, 5], cmap="gray")
         plt.subplot(1, 3, 2)
         plt.title(f"label {i}")
-        plt.imshow(val_data["label"][0, 0, :, :, 5])
+        plt.imshow(val_data["seg"][0, 0, :, :, 5])
         plt.subplot(1, 3, 3)
         plt.title(f"output {i}")
         plt.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, 5])
@@ -368,19 +362,19 @@ print("Evaluation on original image spacings")
       
 val_org_transforms = Compose(
     [
-        LoadImaged(keys=["image", "label"]),
-        EnsureChannelFirstd(keys=["image", "label"]),
-        Orientationd(keys=["image"], axcodes="RAS"),
-        # Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
+        LoadImaged(keys=["img", "seg"]),
+        EnsureChannelFirstd(keys=["img", "seg"]),
+        Orientationd(keys=["img"], axcodes="RAS"),
+        # Spacingd(keys=["img"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
         ScaleIntensityRanged(
-            keys=["image"],
+            keys=["img"],
             a_min=50,
             a_max=800,
             b_min=0.0,
             b_max=1.0,
             clip=True,
         ),
-        CropForegroundd(keys=["image"], source_key="image"),
+        CropForegroundd(keys=["img"], source_key="img"),
     ]
 )
 
@@ -392,7 +386,7 @@ post_transforms = Compose(
         Invertd(
             keys="pred",
             transform=val_org_transforms,
-            orig_keys="image",
+            orig_keys="img",
             meta_keys="pred_meta_dict",
             orig_meta_keys="image_meta_dict",
             meta_key_postfix="meta_dict",
@@ -401,7 +395,7 @@ post_transforms = Compose(
             device="cpu",
         ),
         AsDiscreted(keys="pred", argmax=True, to_onehot=2),
-        AsDiscreted(keys="label", to_onehot=2),
+        AsDiscreted(keys="seg", to_onehot=2),
     ]
 )
 
@@ -410,12 +404,12 @@ model.eval()
 
 with torch.no_grad():
     for val_data in val_org_loader:
-        val_inputs = val_data["image"].to(device)
+        val_inputs = val_data["img"].to(device)
         roi_size = (32, 32, 32)
         sw_batch_size = 1
         val_data["pred"] = sliding_window_inference(val_inputs, roi_size, sw_batch_size, model)
         val_data = [post_transforms(i) for i in decollate_batch(val_data)]
-        val_outputs, val_labels = from_engine(["pred", "label"])(val_data)
+        val_outputs, val_labels = from_engine(["pred", "seg"])(val_data)
         # compute metric for current iteration
         dice_metric(y_pred=val_outputs, y=val_labels)
 
@@ -434,19 +428,19 @@ print("Metric on original image spacing: ", metric_org)
 
 # test_org_transforms = Compose(
 #     [
-#         LoadImaged(keys="image"),
-#         EnsureChannelFirstd(keys="image"),
-#         Orientationd(keys=["image"], axcodes="RAS"),
-#         # Spacingd(keys=["image"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
+#         LoadImaged(keys="img"),
+#         EnsureChannelFirstd(keys="img"),
+#         Orientationd(keys=["img"], axcodes="RAS"),
+#         # Spacingd(keys=["img"], pixdim=(1.5, 1.5, 2.0), mode="bilinear"),
 #         ScaleIntensityRanged(
-#             keys=["image"],
+#             keys=["img"],
 #             a_min=50,
 #             a_max=800,
 #             b_min=0.0,
 #             b_max=1.0,
 #             clip=True,
 #         ),
-#         CropForegroundd(keys=["image"], source_key="image"),
+#         CropForegroundd(keys=["img"], source_key="img"),
 #     ]
 # )
 
@@ -459,7 +453,7 @@ print("Metric on original image spacing: ", metric_org)
 #         Invertd(
 #             keys="pred",
 #             transform=test_org_transforms,
-#             orig_keys="image",
+#             orig_keys="img",
 #             meta_keys="pred_meta_dict",
 #             orig_meta_keys="image_meta_dict",
 #             meta_key_postfix="meta_dict",
@@ -478,7 +472,7 @@ print("Metric on original image spacing: ", metric_org)
 # loader = LoadImage()
 # with torch.no_grad():
 #     for test_data in test_org_loader:
-#         test_inputs = test_data["image"].to(device)
+#         test_inputs = test_data["img"].to(device)
 #         roi_size = (32, 32, 32)
 #         sw_batch_size = 1
 #         test_data["pred"] = sliding_window_inference(test_inputs, roi_size, sw_batch_size, model)
@@ -506,26 +500,26 @@ print("Metric on original image spacing: ", metric_org)
 #                 plt.figure(figsize=(12, 6))
 #                 if i==1:
 #                     plt.subplot(1, 2, 1)
-#                     plt.title("image")
+#                     plt.title("img")
 #                     plt.imshow(original_image[num, :, :], cmap="gray")
 #                     plt.subplot(1, 2, 2)
-#                     plt.title("label")
+#                     plt.title("seg")
 #                     plt.imshow(test_output[0].detach().cpu()[1, num, :, :])
 #                     plt.savefig(f'./image_test/x/demo_figure{num}_checkdata.png')
 #                 elif i==2:
 #                     plt.subplot(1, 2, 1)
-#                     plt.title("image")
+#                     plt.title("img")
 #                     plt.imshow(original_image[:, num, :], cmap="gray")
 #                     plt.subplot(1, 2, 2)
-#                     plt.title("label")
+#                     plt.title("seg")
 #                     plt.imshow(test_output[0].detach().cpu()[1, :, num, :])
 #                     plt.savefig(f'./image_test/y/demo_figure{num}_checkdata.png')
 #                 elif i==3:
 #                     plt.subplot(1, 2, 1)
-#                     plt.title("image")
+#                     plt.title("img")
 #                     plt.imshow(original_image[:, :, num], cmap="gray")
 #                     plt.subplot(1, 2, 2)
-#                     plt.title("label")
+#                     plt.title("seg")
 #                     plt.imshow(test_output[0].detach().cpu()[1, :, :, num])
 #                     plt.savefig(f'./image_test/z/demo_figure{num}_checkdata.png')
 #                 plt.close()
