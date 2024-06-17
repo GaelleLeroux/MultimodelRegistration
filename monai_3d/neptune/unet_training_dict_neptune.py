@@ -29,6 +29,7 @@ from pytorch_lightning.strategies.ddp import DDPStrategy
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
+import traceback
 
 def main(args):
     
@@ -43,6 +44,14 @@ def main(args):
     
     loader = LotusDataModule(args.train_csv,args.val_csv,args.test_csv,args.batch_size,args.num_workers,args.img_column,args.seg_column,train_transforms,val_transforms)
     loader.setup()
+    
+    try:
+        loader = LotusDataModule(args.train_csv, args.val_csv, args.test_csv, args.batch_size, args.num_workers, args.img_column, args.seg_column, train_transforms, val_transforms)
+        loader.setup()
+    except Exception as e:
+        print(f"An error occurred during data loading setup: {str(e)}")
+        traceback.print_exc()
+        return
     
     ################################################################################################################################################################3
     # create UNet, DiceLoss and Adam optimizer
@@ -80,6 +89,7 @@ def main(args):
     
     
     ###############################################################################################################################################################3
+    
     model = UNetLightningModule(**vars(args))
 
     trainer = Trainer(
@@ -98,6 +108,9 @@ def main(args):
     # trainer.fit(model, datamodule=concat_data)
     try:
         trainer.fit(model, datamodule=loader)
+    except Exception as e:
+        print(f"An error occurred during training: {str(e)}")
+        traceback.print_exc()
     finally:
         neptune_logger.experiment.wait()
 
@@ -124,7 +137,7 @@ if __name__ == "__main__":
     log_group = parser.add_argument_group('Logging')
     log_group.add_argument('--neptune_tags', help='Neptune tags', type=str, nargs="+", default="Seg,3D,comp1")
     log_group.add_argument('--logger', help='Neptune tags', type=str, nargs="+", default="SegmentationLogger")
-    log_group.add_argument('--log_steps', help='Log every N steps', type=int, default=15)
+    log_group.add_argument('--log_steps', help='Log every N steps', type=int, default=32)
     log_group.add_argument('--steps', type=int, default=-1, help='Max steps')
     args = parser.parse_args()
 

@@ -65,7 +65,7 @@ class UNetLightningModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         val_images, val_labels = batch["img"], batch["seg"]
-        val_outputs = sliding_window_inference(val_images, (32, 32, 32), 1, self.model)
+        val_outputs = sliding_window_inference(val_images, (16, 32, 32), 1, self.model)
         val_outputs = [self.post_pred(i) for i in decollate_batch(val_outputs)]
         val_labels = [self.post_label(i) for i in decollate_batch(val_labels)]
 
