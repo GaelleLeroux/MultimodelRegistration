@@ -117,12 +117,12 @@ def main(args):
 
 if __name__ == "__main__":
     # with tempfile.TemporaryDirectory() as tempdir:
-    parser = argparse.ArgumentParser(description='2D Segmentation MRI training')
+    parser = argparse.ArgumentParser(description='3D Segmentation MRI training')
     
     input_group = parser.add_argument_group('Input')
-    input_group.add_argument('--test_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/test.csv', help='path csv test')
-    input_group.add_argument('--train_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/train.csv', help='path train csv')
-    input_group.add_argument('--val_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv/valid.csv', help='pat valid csv')
+    input_group.add_argument('--test_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D_more_data/a3_csv_mri_l1/test.csv', help='path csv test')
+    input_group.add_argument('--train_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D_more_data/a3_csv_mri_l1/train.csv', help='path train csv')
+    input_group.add_argument('--val_csv', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D_more_data/a3_csv_mri_l1/valid.csv', help='pat valid csv')
     input_group.add_argument('--img_column', type=str, default='mri', help='name colum for image path')
     input_group.add_argument('--seg_column', type=str, default='seg', help='name colum for segmentation path')
     input_group.add_argument('--patience', help='Max number of patience for early stopping', type=int, default=25)
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     input_group.add_argument('--epochs', type=int, default=300, help='number echo')
 
     output_group = parser.add_argument_group('Output')
-    output_group.add_argument('--out', help='Output directory', type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D/CB_training_csv")
+    output_group.add_argument('--out', help='Output directory', type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/3D_more_data/a3_csv_mri_l1")
 
     log_group = parser.add_argument_group('Logging')
     log_group.add_argument('--neptune_tags', help='Neptune tags', type=str, nargs="+", default="Seg,3D,comp1")
