@@ -68,9 +68,9 @@ def process_folder(folder_path, seg_folder, folder_output, suffix, seg_label):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Apply segmentation mask to all MRI files in a folder.")
-    parser.add_argument("--folder_path", type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b2_folder_CBCT/test", help="The path to the folder containing the MRI files.")
+    parser.add_argument("--folder_path", type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b4_folder_CBCT_norm/a04_test_percentile=[10,95]_norm=[0,3]", help="The path to the folder containing the MRI files.")
     parser.add_argument("--seg_folder", type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b2_folder_CBCT_l2/test", help="The path to the segmentation file.")
-    parser.add_argument("--folder_output", type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b5_folder_CBCT_mask/test", help="The path to the output folder for the masked files.")
+    parser.add_argument("--folder_output", type=str, default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b5_folder_CBCT_norm_mask/test_percentile=[10,95]_norm=[0,3]", help="The path to the output folder for the masked files.")
     parser.add_argument("--suffix", type=str, default="mask", help="The suffix to add to the output filenames.")
     parser.add_argument("--seg_label", type=int, default=1, help="Label of the segmentation.")
 
