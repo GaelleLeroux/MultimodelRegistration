@@ -74,8 +74,8 @@ def center(args):
     # train_labels = sorted(glob.glob(args.input_label))
     
     train_images = sorted(glob.glob(os.path.join(args.input_image, "*.nii","*.nii.gz")))
-    train_images_nii = glob.glob(os.path.join(input_image_directory, "*.nii"))
-    train_images_niigz = glob.glob(os.path.join(input_image_directory, "*.nii.gz"))
+    train_images_nii = glob.glob(os.path.join(args.input_image, "*.nii"))
+    train_images_niigz = glob.glob(os.path.join(args.input_image, "*.nii.gz"))
 
     # Combine les deux listes
     train_images = sorted(train_images_nii + train_images_niigz)
@@ -157,8 +157,8 @@ if __name__ == "__main__":
     print("PRE ASO")
 
     parser = argparse.ArgumentParser(description='Get nifti info')
-    parser.add_argument('--input_image', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/More_DATA_to_center/CTs_Anonymized', help='Input folder')
-    parser.add_argument('--output_image', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/More_DATA_to_center/CTs_Anonymized_oriented/', help='Output directory for the aggregated CSV file')
+    parser.add_argument('--input_image', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Centering/CBCT_original', help='Input folder')
+    parser.add_argument('--output_image', type=str, default='/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Centering/CBCT_center', help='Output directory for the aggregated CSV file')
     args = parser.parse_args()
     
     print("args  : ",args)

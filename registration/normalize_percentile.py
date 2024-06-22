@@ -14,13 +14,14 @@ def enhance_contrast(image,upper_percentile,lower_percentile, min_norm, max_norm
     """Enhance the contrast of the image while keeping normalization between 0 and 1."""
     # Compute thresholds
     lower_threshold, upper_threshold = compute_thresholds(image,lower_percentile,upper_percentile)
-    print(f"Computed thresholds - Lower: {lower_threshold}, Upper: {upper_threshold}")
+    # print(f"Computed thresholds - Lower: {lower_threshold}, Upper: {upper_threshold}")
 
 
     # Normalize the image using the computed thresholds
     array = sitk.GetArrayFromImage(image)
     normalized_array = np.clip((array - lower_threshold) / (upper_threshold - lower_threshold), 0, 1)
     scaled_array = normalized_array * max_norm - min_norm
+    
     return sitk.GetImageFromArray(scaled_array)
 
 def process_images(input_folder, output_folder,upper_percentile,lower_percentile,min_norm, max_norm):
@@ -31,6 +32,7 @@ def process_images(input_folder, output_folder,upper_percentile,lower_percentile
     for filename in os.listdir(input_folder):
         if filename.endswith('.nii.gz'):
             input_path = os.path.join(input_folder, filename)
+            print("filename : ",filename)
             img = sitk.ReadImage(input_path)
             
             # Enhance the contrast of the image
@@ -47,12 +49,12 @@ def process_images(input_folder, output_folder,upper_percentile,lower_percentile
 
 def main():
     parser = argparse.ArgumentParser(description='Enhance contrast of NIfTI images and save with a new suffix.')
-    parser.add_argument('--input_folder', type=str, help='Path to the input folder containing .nii.gz images.', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b2_folder_CBCT/test")
-    parser.add_argument('--output_folder', type=str, help='Path to the output folder to save normalized images.', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration/b4_folder_CBCT_norm")
+    parser.add_argument('--input_folder', type=str, help='Path to the input folder containing .nii.gz images.', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/a3_Registration_closer_all/b0_CBCT")
+    parser.add_argument('--output_folder', type=str, help='Path to the output folder to save normalized images.', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/a3_Registration_closer_all/b2_CBCT_norm")
     parser.add_argument('--upper_percentile', type=int, help='upper percentile to apply, choose between 0 and 100',default=95)
     parser.add_argument('--lower_percentile', type=int, help='lower percentile to apply, choose between 0 and 100',default=10)
+    parser.add_argument('--max_norm', type=int, help='max value after normalization',default=75)
     parser.add_argument('--min_norm', type=int, help='min value after normalization',default=0)
-    parser.add_argument('--max_norm', type=int, help='max value after normalization',default=3)
     
     args = parser.parse_args()
     
