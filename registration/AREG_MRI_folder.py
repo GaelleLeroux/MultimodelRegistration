@@ -36,7 +36,8 @@ def main(args):
             # cbct_path = os.path.join(cbct_folder, cbct_file)
             cbct_path_original = get_corresponding_file(mri_original_folder, patient_id, "_CBCT_")
             mri_path = get_corresponding_file(mri_folder, patient_id, "_MR_")
-            mri_path_original = get_corresponding_file(mri_original_folder, patient_id, "_MR_")
+            if mri_original_folder!="None":
+                mri_path_original = get_corresponding_file(mri_original_folder, patient_id, "_MR_")
             
             # if not mri_path:
             #     print(f"Corresponding MRI file for {cbct_file} not found.")
@@ -94,25 +95,23 @@ def process_images(cbct_path, mri_path, cbct_mask_path, mri_mask_path, cbct_seg_
     os.makedirs(output_folder, exist_ok=True)
     
     output_image_path = os.path.join(output_folder,os.path.basename(mri_path_original).replace('.nii.gz', f'_reg.nii.gz'))
-    output_image_path_seg = os.path.join(output_folder,os.path.basename(mri_seg_path).replace('.nii.gz', f'_reg.nii.gz'))
     output_image_path_transform = os.path.join(output_folder,os.path.basename(mri_path_original).replace('.nii.gz', f'_reg_transform.tfm'))
     
     sitk.WriteTransform(transform, output_image_path_transform)
     
-    try : 
-        resample_t2 = sitk.Cast(ResampleImage(sitk.ReadImage(mri_path_original), transform), sitk.sitkInt16)
-        sitk.WriteImage(resample_t2, output_image_path)
-    except KeyError as e :
-        print("Error to apply the matrix to : ",output_image_path)
-        print(e)
+    resample_t2 = sitk.Cast(ResampleImage(sitk.ReadImage(mri_path_original), transform), sitk.sitkInt16)
+    sitk.WriteImage(resample_t2, output_image_path)
+
         
-    try : 
-        resample_seg = sitk.Cast(ResampleImage(sitk.ReadImage(mri_seg_path), transform), sitk.sitkInt16)
-        sitk.WriteImage(resample_seg, output_image_path_seg)
-        
-    except KeyError as e :
-        print("Error to apply the matrix to : ",output_image_path_seg)
-        print(e)
+    # if mri_seg_path!="None":
+    #     output_image_path_seg = os.path.join(output_folder,os.path.basename(mri_seg_path).replace('.nii.gz', f'_reg.nii.gz'))
+    #     try : 
+    #         resample_seg = sitk.Cast(ResampleImage(sitk.ReadImage(mri_seg_path), transform), sitk.sitkInt16)
+    #         sitk.WriteImage(resample_seg, output_image_path_seg)
+            
+    #     except KeyError as e :
+    #         print("Error to apply the matrix to : ",output_image_path_seg)
+    #         print(e)
     
     
     

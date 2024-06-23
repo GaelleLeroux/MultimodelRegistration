@@ -50,40 +50,46 @@ def main(args):
                     nmi_value = compute_nmi(fixed_image, moving_image)
                     
                     # Load segmentation masks
-                    fixed_seg_path = get_corresponding_file(args.input_folder_mri, patient_id, "_MR_seg_")
-                    moving_seg_path = get_corresponding_file(args.input_folder_cbct, patient_id, "_CBCT_seg_")
-                    if fixed_seg_path and moving_seg_path:
-                        fixed_seg = sitk.GetArrayFromImage(sitk.ReadImage(fixed_seg_path, sitk.sitkUInt8))
-                        moving_seg = sitk.GetArrayFromImage(sitk.ReadImage(moving_seg_path, sitk.sitkUInt8))
-                        
-                        # Ensure the segmentations are binary
-                        fixed_seg = fixed_seg > 0
-                        moving_seg = moving_seg > 0
-                        
-                        # Compute Dice coefficient
-                        dice_value = compute_dice_coefficient(fixed_seg, moving_seg)
-                    else:
-                        print("error dice computation")
-                        dice_value = None
+                    fixed_seg_path = get_corresponding_file(args.input_folder_mri_seg, patient_id, "_MR_Seg_")
+                    moving_seg_path = get_corresponding_file(args.input_folder_cbct_seg, patient_id, "_CBCT_Seg_")
+                    # if fixed_seg_path and moving_seg_path:
+                    #     try : 
+                    #         fixed_seg = sitk.GetArrayFromImage(sitk.ReadImage(fixed_seg_path, sitk.sitkUInt8))
+                    #         moving_seg = sitk.GetArrayFromImage(sitk.ReadImage(moving_seg_path, sitk.sitkUInt8))
+                            
+                    #         # Ensure the segmentations are binary
+                    #         fixed_seg = fixed_seg > 0
+                    #         moving_seg = moving_seg > 0
+                            
+                    #         # Compute Dice coefficient
+                    #         dice_value = compute_dice_coefficient(fixed_seg, moving_seg)
+                    #     except KeyError as e :
+                    #         print(e)
+                    # else:
+                    #     print("fixed_seg_path : ",fixed_seg_path)
+                    #     print("moving_seg_path : ",moving_seg_path)
+                    #     print("error dice computation")
+                    dice_value = None
                     
-                    results.append([patient_id, nmi_value, dice_value])
+                    results.append([patient_id, nmi_value])
     
     # Create a DataFrame and save to CSV
-    results_df = pd.DataFrame(results, columns=['PatientID', 'NMI', 'Dice'])
+    results_df = pd.DataFrame(results, columns=['PatientID', 'NMI'])
     output_csv_path = os.path.join(args.output_folder, args.name_csv)
     results_df.to_csv(output_csv_path, index=False)
     print(f"Results saved to {output_csv_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate MRI-CBCT registration quality.")
-    parser.add_argument('--input_folder_mri', help='Input folder for MRI files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration_data_closer/z0_reg/a01_mri:inv+norm[0,100]+p[0,100]_cbct:norm[0,75]+p[10,95]+mask")
-    parser.add_argument('--input_folder_mri_seg', help='Input folder segmentation for MRI files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration_data_closer/z0_reg/a01_mri:inv+norm[0,100]+p[0,100]_cbct:norm[0,75]+p[10,95]+mask")
+    parser.add_argument('--input_folder_mri', help='Input folder for MRI files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri")
+    parser.add_argument('--input_folder_mri_seg', help='Input folder segmentation for MRI files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri_seg_l2")
     
-    parser.add_argument('--input_folder_cbct', help='Input folder for CBCT files',default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration_data_closer/b0_CBCT")
-    parser.add_argument('--input_folder_cbct_seg', help='Input folder segmentation for CBCT files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration_data_closer/z0_reg/a01_mri:inv+norm[0,100]+p[0,100]_cbct:norm[0,75]+p[10,95]+mask")
+    parser.add_argument('--input_folder_cbct', help='Input folder for CBCT files',default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/cbct")
+    parser.add_argument('--input_folder_cbct_seg', help='Input folder segmentation for CBCT files', default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/cbct_seg_l2")
     
-    parser.add_argument('--output_folder', help='Output folder for the results CSV',default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/Registration_data_closer/z0_reg")
-    parser.add_argument('--name_csv', help='Name of the output CSV file',default='a01_result.csv')
+    parser.add_argument('--output_folder', help='Output folder for the results CSV',default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg")
+    parser.add_argument('--name_csv', help='Name of the output CSV file',default='result_not_worked.csv')
 
     args = parser.parse_args()
     main(args)
+    

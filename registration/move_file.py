@@ -16,8 +16,8 @@ def move_files(input_folder, output_folder, word):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Move files containing a specific word in their name to another folder.")
-    parser.add_argument("--input_folder", type=str, help="The input folder to search for files.",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/12_Leroux_Action_ready (5)/12_Leroux_Action_ready")
-    parser.add_argument("--output_folder", type=str, help="The output folder to move the files to.",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/a3_Registration_closer_all/d0_CBCT_seg")
+    parser.add_argument("--input_folder", type=str, help="The input folder to search for files.",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/14_Common_Crop (2)/14_Common_Crop")
+    parser.add_argument("--output_folder", type=str, help="The output folder to move the files to.",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Segmentation/a5_folder_14_more_data/d0_CBCT_seg")
     parser.add_argument("--word", type=str, help="The word to search for in the file names.",default="CBCT_Seg")
 
     args = parser.parse_args()
