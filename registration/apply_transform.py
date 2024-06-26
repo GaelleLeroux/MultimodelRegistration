@@ -33,26 +33,28 @@ def main(args):
     
     for transform in os.listdir(args.transform_folder):
         if transform.endswith(".tfm"):
-            patient_id = transform.split("_Crop_reg_transform")[0]
+            patient_id = transform.split("_MR")[0]
             
-            input_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
+            # input_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
             seg_file = get_corresponding_file(args.input_seg_folder, patient_id, "_MR_")
-            
-            output_image_path = os.path.join(args.output_folder_file,os.path.basename(input_file).replace('.nii.gz', f'_reg.nii.gz'))
+            print("input_seg_folder : ",args.input_seg_folder)
+            print("seg_file : ",seg_file)
+            print("patient_id : ",patient_id)
+            # output_image_path = os.path.join(args.output_folder_file,os.path.basename(input_file).replace('.nii.gz', f'_reg.nii.gz'))
             output_seg_path = os.path.join(args.output_folder_seg,os.path.basename(seg_file).replace('.nii.gz', f'_reg.nii.gz'))
             
             transform = os.path.join(args.transform_folder,transform)
             
-            print("-"*150)
-            print("input_file : ",input_file)
-            print("transform : ",transform)
-            print("output_image_path : ",output_image_path)
+            # print("-"*150)
+            # print("input_file : ",input_file)
+            # print("transform : ",transform)
+            # print("output_image_path : ",output_image_path)
             print("*"*100)
             print("seg_file : ",seg_file)
             print("transform : ",transform)
             print("output_seg_path : ",output_seg_path)
             
-            apply_transformation(input_file,transform,output_image_path)
+            # apply_transformation(input_file,transform,output_image_path)
             apply_transformation(seg_file,transform,output_seg_path)
             
     
@@ -60,11 +62,11 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Apply a transformation to an image.')
 
-    parser.add_argument("--input_folder", type=str, help="Path to the input image file (e.g., .nii.gz)", default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/not_reg/mri")
-    parser.add_argument("--input_seg_folder", type=str, help="Path to the input image file (e.g., .nii.gz)",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/not_reg/mri_seg_l2")
-    parser.add_argument("--transform_folder", type=str, help="Path to the transformation file (e.g., .tfm)",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/transform")
-    parser.add_argument("--output_folder_file", type=str, help="Path to save the output transformed image (e.g., .nii.gz)",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri")
-    parser.add_argument("--output_folder_seg", type=str, help="Path to save the output transformed image (e.g., .nii.gz)", default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri_seg_l2")
+    # parser.add_argument("--input_folder", type=str, help="Path to the input image file (e.g., .nii.gz)", default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/transform/")
+    parser.add_argument("--input_seg_folder", type=str, help="Path to the input image file (e.g., .nii.gz)",default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg")
+    parser.add_argument("--transform_folder", type=str, help="Path to the transformation file (e.g., .tfm)",default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/transform/")
+    # parser.add_argument("--output_folder_file", type=str, help="Path to save the output transformed image (e.g., .nii.gz)",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri")
+    parser.add_argument("--output_folder_seg", type=str, help="Path to save the output transformed image (e.g., .nii.gz)", default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg_transform/")
 
     args = parser.parse_args()
 

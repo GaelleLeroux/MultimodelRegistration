@@ -41,10 +41,10 @@ def get_nifti_info_folder(args):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Get nifti info')
-    parser.add_argument('--input', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/imagesTr/', help='Input folder')
-    parser.add_argument('--output', type=str, default='.', help='Output directory for the aggregated CSV file')
-    parser.add_argument('--name', type=str, default='Nfiti_info_aggregated.csv', help='name of the CSV')
-    parser.add_argument('--output_resample', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Training/resample', help='Output directory were the file will be save after resample')
+    parser.add_argument('--input', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/Seg_sep/label_2/', help='Input folder')
+    parser.add_argument('--output', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration', help='Output directory for the aggregated CSV file')
+    parser.add_argument('--name', type=str, default='resample_seg.csv', help='name of the CSV')
+    parser.add_argument('--output_resample', type=str, default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/resample/', help='Output directory were the file will be save after resample')
     args = parser.parse_args()
 
     # if output folder does not exist, create it
