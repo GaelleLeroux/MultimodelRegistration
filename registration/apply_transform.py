@@ -36,12 +36,12 @@ def main(args):
             patient_id = transform.split("_MR")[0]
             
             # input_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
-            seg_file = get_corresponding_file(args.input_seg_folder, patient_id, "_MR_")
-            print("input_seg_folder : ",args.input_seg_folder)
+            seg_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
+            print("input_folder : ",args.input_folder)
             print("seg_file : ",seg_file)
             print("patient_id : ",patient_id)
             # output_image_path = os.path.join(args.output_folder_file,os.path.basename(input_file).replace('.nii.gz', f'_reg.nii.gz'))
-            output_seg_path = os.path.join(args.output_folder_seg,os.path.basename(seg_file).replace('.nii.gz', f'_reg.nii.gz'))
+            output_seg_path = os.path.join(args.output_folder,os.path.basename(seg_file).replace('.nii.gz', f'_reg.nii.gz'))
             
             transform = os.path.join(args.transform_folder,transform)
             
@@ -63,10 +63,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Apply a transformation to an image.')
 
     # parser.add_argument("--input_folder", type=str, help="Path to the input image file (e.g., .nii.gz)", default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/transform/")
-    parser.add_argument("--input_seg_folder", type=str, help="Path to the input image file (e.g., .nii.gz)",default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg")
+    parser.add_argument("--input_folder", type=str, help="Path to the input image file (e.g., .nii.gz)",default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg")
     parser.add_argument("--transform_folder", type=str, help="Path to the transformation file (e.g., .tfm)",default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/transform/")
     # parser.add_argument("--output_folder_file", type=str, help="Path to save the output transformed image (e.g., .nii.gz)",default="/home/lucia/Documents/Gaelle/Data/MultimodelReg/Registration/not_worked/reg/mri")
-    parser.add_argument("--output_folder_seg", type=str, help="Path to save the output transformed image (e.g., .nii.gz)", default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg_transform/")
+    parser.add_argument("--output_folder", type=str, help="Path to save the output transformed image (e.g., .nii.gz)", default="/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/MRI_seg_transform/")
 
     args = parser.parse_args()
 
