@@ -3,8 +3,8 @@ import nibabel as nib
 import numpy as np
 
 # Définissez les chemins vers les dossiers
-input_folder = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/15_Registration_quality_control/CBCT_seg/'
-output_folder_base = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/15_Registration_quality_control/CBCT_seg_sep'
+input_folder = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/B12_cropcrop_29Juin/d0_CBCT_seg/'
+output_folder_base = '/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Registration/B12_cropcrop_29Juin/d1_CBCT_seg_sep/'
 
 # Créez le dossier de base pour les sorties s'il n'existe pas
 os.makedirs(output_folder_base, exist_ok=True)

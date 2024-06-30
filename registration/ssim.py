@@ -13,7 +13,7 @@ def create_window(window_size, channel):
     window = _3D_window.expand(channel, 1, window_size, window_size, window_size).contiguous()
     return window
 
-def _ssim(img1, img2, window, window_size, channel, size_average=True):
+def _ssim(img1, img2, window, window_size, channel, mask=None, size_average=True):
     mu1 = F.conv3d(img1, window, padding=window_size//2, groups=channel)
     mu2 = F.conv3d(img2, window, padding=window_size//2, groups=channel)
 
@@ -30,8 +30,11 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
 
     ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
 
+    if mask is not None:
+        ssim_map = ssim_map * mask.float()
+
     if size_average:
-        return ssim_map.mean()
+        return ssim_map.sum() / mask.float().sum() if mask is not None else ssim_map.mean()
     else:
         return ssim_map.mean(1).mean(1).mean(1)
 
@@ -43,7 +46,7 @@ class SSIM(torch.nn.Module):
         self.channel = 1
         self.window = create_window(window_size, self.channel)
 
-    def forward(self, img1, img2):
+    def forward(self, img1, img2, mask=None):
         (_, channel, _, _, _) = img1.size()
 
         if channel == self.channel and self.window.data.type() == img1.data.type():
@@ -58,9 +61,9 @@ class SSIM(torch.nn.Module):
             self.window = window
             self.channel = channel
 
-        return _ssim(img1, img2, window, self.window_size, channel, self.size_average)
+        return _ssim(img1, img2, window, self.window_size, channel, mask, self.size_average)
 
-def ssim(img1, img2, window_size=11, size_average=True):
+def ssim(img1, img2, window_size=11, size_average=True, mask=None):
     (_, channel, _, _, _) = img1.size()
     window = create_window(window_size, channel)
 
@@ -68,4 +71,4 @@ def ssim(img1, img2, window_size=11, size_average=True):
         window = window.cuda(img1.get_device())
     window = window.type_as(img1)
 
-    return _ssim(img1, img2, window, window_size, channel, size_average)
+    return _ssim(img1, img2, window, window_size, channel, mask, size_average)

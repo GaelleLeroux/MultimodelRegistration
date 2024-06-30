@@ -64,9 +64,9 @@ def run_script_normalize_percentile_monai(file_type,input_folder, folder_general
     output_path_norm = os.path.join(output_folder_norm,f"test_percentile=[{lower_percentile},{upper_percentile}]_norm=[{min_norm},{max_norm}]")
     return output_path_norm
 
-def run_script_apply_mask(cbct_folder, cbct_label2,folder_general, suffix):
+def run_script_apply_mask(cbct_folder, cbct_label2,folder_general, suffix,upper_percentile, lower_percentile, max_norm, min_norm):
     script_name = 'apply_mask_folder.py'
-    cbct_mask_folder = os.path.join(folder_general,"b3_CBCT_norm_mask:l2","test_percentile=[10,95]_norm=[0,75]")
+    cbct_mask_folder = os.path.join(folder_general,"b3_CBCT_norm_mask:l2",f"test_percentile=[{lower_percentile},{upper_percentile}]_norm=[{min_norm},{max_norm}]")
     create_folder(cbct_mask_folder)
     args = [
         f"--folder_path={cbct_folder}",
@@ -113,17 +113,17 @@ def main():
     cbct_lower_p = 10
     cbct_upper_p = 95
     cbct_min_norm = 0
-    cbct_max_norm = 100
+    cbct_max_norm = 150
     # MRI
     folder_mri_inverse = run_script_inverse_mri(args.mri_folder, args.folder_general)
-    # input_path_norm_mri = run_script_normalize_percentile("MRI",folder_mri_inverse, args.folder_general, upper_percentile=mri_upper_p, lower_percentile=mri_lower_p, max_norm=mri_max_norm, min_norm=mri_min_norm)
-    input_path_norm_mri = run_script_normalize_percentile_monai("MRI",folder_mri_inverse, args.folder_general, upper_percentile=mri_upper_p, lower_percentile=mri_lower_p, max_norm=mri_max_norm, min_norm=mri_min_norm)
+    input_path_norm_mri = run_script_normalize_percentile("MRI",folder_mri_inverse, args.folder_general, upper_percentile=mri_upper_p, lower_percentile=mri_lower_p, max_norm=mri_max_norm, min_norm=mri_min_norm)
+    # input_path_norm_mri = run_script_normalize_percentile_monai("MRI",folder_mri_inverse, args.folder_general, upper_percentile=mri_upper_p, lower_percentile=mri_lower_p, max_norm=mri_max_norm, min_norm=mri_min_norm)
     
 
     # CBCT
-    # output_path_norm_cbct = run_script_normalize_percentile("CBCT",args.cbct_folder, args.folder_general, upper_percentile=cbct_upper_p, lower_percentile=cbct_lower_p, max_norm=cbct_max_norm, min_norm=cbct_min_norm)
-    output_path_norm_cbct = run_script_normalize_percentile_monai("CBCT",args.cbct_folder, args.folder_general, upper_percentile=cbct_upper_p, lower_percentile=cbct_lower_p, max_norm=cbct_max_norm, min_norm=cbct_min_norm)
-    input_path_cbct_norm_mask = run_script_apply_mask(output_path_norm_cbct,args.cbct_label2,args.folder_general,"mask")
+    output_path_norm_cbct = run_script_normalize_percentile("CBCT",args.cbct_folder, args.folder_general, upper_percentile=cbct_upper_p, lower_percentile=cbct_lower_p, max_norm=cbct_max_norm, min_norm=cbct_min_norm)
+    # output_path_norm_cbct = run_script_normalize_percentile_monai("CBCT",args.cbct_folder, args.folder_general, upper_percentile=cbct_upper_p, lower_percentile=cbct_lower_p, max_norm=cbct_max_norm, min_norm=cbct_min_norm)
+    input_path_cbct_norm_mask = run_script_apply_mask(output_path_norm_cbct,args.cbct_label2,args.folder_general,"mask",upper_percentile=cbct_upper_p, lower_percentile=cbct_lower_p, max_norm=cbct_max_norm, min_norm=cbct_min_norm)
     
     # REG
     run_script_AREG_MRI_folder(cbct_folder=args.cbct_folder,cbct_mask_folder=input_path_cbct_norm_mask,mri_folder=input_path_norm_mri,mri_original_folder=args.mri_folder,folder_general=args.folder_general,mri_lower_p=mri_lower_p,mri_upper_p=mri_upper_p,mri_min_norm=mri_min_norm,mri_max_norm=mri_max_norm,cbct_lower_p=cbct_lower_p,cbct_upper_p=cbct_upper_p,cbct_min_norm=cbct_min_norm,cbct_max_norm=cbct_max_norm)

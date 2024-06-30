@@ -72,8 +72,8 @@ def main(args):
 if __name__=="__main__":
     # SIZE AND SPACING TO RESAMPLE ARE HARD WRITTEN IN THE LINE 24
     parser = argparse.ArgumentParser(description='Get nifti info')
-    parser.add_argument('--input',default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg_2/RESAMPLE/a02_resample_non_centre/',type=str, help='Input folder')
-    parser.add_argument('--output',default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg_2/RESAMPLE/a03_recenter_2/', type=str, help='Output folder')
+    parser.add_argument('--input',default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Segmentation_by_registration/b1_CBCT_resample',type=str, help='Input folder')
+    parser.add_argument('--output',default='/home/luciacev/Documents/Gaelle/Data/MultimodelReg/Segmentation_by_registration/b2_CBCT_resample_center/', type=str, help='Output folder')
     parser.add_argument('--suffix', default="center",type=str, help='Input folder')
     # /home/luciacev/Documents/Gaelle/MultimodelRegistration/resample/resample.py
     args = parser.parse_args()

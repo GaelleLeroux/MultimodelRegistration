@@ -51,10 +51,10 @@ def resample_fn(img, args):
     if(args.origin is not None):
         output_origin = args.origin
 
-    # if(center):
-    #     output_physical_size = np.array(output_size)*np.array(output_spacing)
-    #     input_physical_size = np.array(size)*np.array(spacing)
-    #     output_origin = np.array(output_origin) - (output_physical_size - input_physical_size)/2.0
+    if(center):
+        output_physical_size = np.array(output_size)*np.array(output_spacing)
+        input_physical_size = np.array(size)*np.array(spacing)
+        output_origin = np.array(output_origin) - (output_physical_size - input_physical_size)/2.0
 
     print("Input size:", size)
     print("Input spacing:", spacing)
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     transform_group.add_argument('--spacing', nargs="+", type=float, default=None, help='Output spacing')
     transform_group.add_argument('--origin', nargs="+", type=float, default=None, help='Output origin')
     transform_group.add_argument('--linear', type=bool, help='Use linear interpolation.', default=False)
-    transform_group.add_argument('--center', type=bool, help='Center the image in the space', default=False)
+    transform_group.add_argument('--center', type=int, help='Center the image in the space', default=0)
     transform_group.add_argument('--fit_spacing', type=bool, help='Fit spacing to output', default=False)
     transform_group.add_argument('--iso_spacing', type=bool, help='Same spacing for resampled output', default=False)
 

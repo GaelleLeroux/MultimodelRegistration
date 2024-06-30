@@ -99,8 +99,8 @@ def process_images(cbct_path, mri_path, cbct_mask_path, mri_mask_path, cbct_seg_
     
     sitk.WriteTransform(transform, output_image_path_transform)
     
-    resample_t2 = sitk.Cast(ResampleImage(sitk.ReadImage(mri_path_original), transform), sitk.sitkInt16)
-    sitk.WriteImage(resample_t2, output_image_path)
+    # resample_t2 = sitk.Cast(ResampleImage(sitk.ReadImage(mri_path_original), transform), sitk.sitkInt16)
+    # sitk.WriteImage(resample_t2, output_image_path)
 
         
     # if mri_seg_path!="None":

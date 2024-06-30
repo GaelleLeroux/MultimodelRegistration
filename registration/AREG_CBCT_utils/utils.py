@@ -444,6 +444,47 @@ def ElastixApprox(fixed_image, moving_image):
 
     return TransParamObj
 
+def ElastixReg_MI(fixed_image, moving_image, initial_transform=None):
+    """Perform a registration using elastix with AdvancedMattestMtutalInformation"""
+
+    elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
+    # elastix_object.SetFixedMask(fixed_mask)
+
+    # ParameterMap
+    parameter_object = itk.ParameterObject.New()
+    default_rigid_parameter_map = parameter_object.GetDefaultParameterMap("rigid")
+
+    # Modify the parameter map to use AdvancedMattestMtutalInformation
+    default_rigid_parameter_map["Metric"] = ["AdvancedMattestMtutalInformation"]
+    default_rigid_parameter_map["Metric0Weight"] = ["1.0"]
+    default_rigid_parameter_map["NumberOfHistogramBins"] = ["32"]
+    default_rigid_parameter_map["UseNormalization"] = ["false"]
+    default_rigid_parameter_map["FixedImagePyramid"] = ["FixedSmoothingImagePyramid"]
+    default_rigid_parameter_map["MovingImagePyramid"] = ["MovingSmoothingImagePyramid"]
+
+    parameter_object.AddParameterMap(default_rigid_parameter_map)
+    parameter_object.SetParameter("ErodeMask", "true")
+    parameter_object.SetParameter("WriteResultImage", "false")
+    parameter_object.SetParameter("MaximumNumberOfIterations", "10000")
+    parameter_object.SetParameter("NumberOfResolutions", "1")
+    parameter_object.SetParameter("NumberOfSpatialSamples", "10000")
+    # parameter_object.SetParameter("MaximumNumberOfSamplingAttempts", "25")
+
+    elastix_object.SetParameterObject(parameter_object)
+    if initial_transform is not None:
+        elastix_object.SetInitialTransformParameterObject(initial_transform)
+
+    # Additional parameters
+    elastix_object.SetLogToConsole(False)
+
+    # Execute registration
+    elastix_object.UpdateLargestPossibleRegion()
+
+    TransParamObj = elastix_object.GetTransformParameterObject()
+
+    return TransParamObj
+
+
 
 def ElastixReg(fixed_image, moving_image, initial_transform=None):
     """Perform a registration using elastix with a rigid transform and possibly an initial transform"""

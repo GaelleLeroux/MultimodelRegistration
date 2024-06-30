@@ -33,15 +33,17 @@ def main(args):
     
     for transform in os.listdir(args.transform_folder):
         if transform.endswith(".tfm"):
-            patient_id = transform.split("_MR")[0]
+            patient_id = transform.split("_MR")[0].split(".tfm")[0].split("_MA")[0]
             
             # input_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
             seg_file = get_corresponding_file(args.input_folder, patient_id, "_MR_")
+            if type(seg_file)!=str:
+                continue
+            print("*"*100)
             print("input_folder : ",args.input_folder)
-            print("seg_file : ",seg_file)
             print("patient_id : ",patient_id)
             # output_image_path = os.path.join(args.output_folder_file,os.path.basename(input_file).replace('.nii.gz', f'_reg.nii.gz'))
-            output_seg_path = os.path.join(args.output_folder,os.path.basename(seg_file).replace('.nii.gz', f'_reg.nii.gz'))
+            output_seg_path = os.path.join(args.output_folder,os.path.basename(seg_file).replace('.nii.gz', f'_B.nii.gz'))
             
             transform = os.path.join(args.transform_folder,transform)
             
@@ -49,11 +51,11 @@ def main(args):
             # print("input_file : ",input_file)
             # print("transform : ",transform)
             # print("output_image_path : ",output_image_path)
-            print("*"*100)
+            
             print("seg_file : ",seg_file)
             print("transform : ",transform)
             print("output_seg_path : ",output_seg_path)
-            
+            print("*"*100)
             # apply_transformation(input_file,transform,output_image_path)
             apply_transformation(seg_file,transform,output_seg_path)
             
