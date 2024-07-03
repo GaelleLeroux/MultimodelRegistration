@@ -34,8 +34,7 @@ def process_transforms(input_folder, output_folder):
             file_path = os.path.join(input_folder, file_name)
             matrix = read_transform_file(file_path)
             for i in range(4):
-                row = [file_name] if i == 0 else [""]
-                row.extend(matrix[i, :])
+                row = [file_name if i == 0 else ""] + matrix[i, :].tolist()
                 all_data.append(row)
     
     # Create a DataFrame with appropriate column names
@@ -44,6 +43,7 @@ def process_transforms(input_folder, output_folder):
     
     output_file = os.path.join(output_folder, 'transforms.csv')
     df.to_csv(output_file, index=False)
+
 def main():
     parser = argparse.ArgumentParser(description="Process .tfm files and save to CSV.")
     parser.add_argument('--input_folder', type=str, required=True, help="Folder containing .tfm files")
